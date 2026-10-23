@@ -11,13 +11,18 @@ export function escapeHtml(str) {
 }
 
 export function toCleanBrowserPath(rawHref, baseStacUrl) {
-  if (!rawHref) return "/catalog";
+  const prefix = (CONFIG.pathPrefix || "/").replace(/\/?$/, "/");
+  if (!rawHref) return `${prefix}catalog`;
 
   const catalogUrl = CONFIG.catalogUrl || "";
   const catalogBaseDir = catalogUrl.replace(/\/[^/]*$/, "/");
 
   if (rawHref.startsWith("/") && !rawHref.startsWith("//")) {
-    return rawHref.replace(/\.json($|\?)/, "$1");
+    const rawClean = rawHref.replace(/\.json($|\?)/, "$1");
+    if (!rawClean.startsWith(prefix)) {
+      return prefix + rawClean.replace(/^\/+/, "");
+    }
+    return rawClean;
   }
 
   let absUrl = rawHref;
@@ -31,13 +36,13 @@ export function toCleanBrowserPath(rawHref, baseStacUrl) {
   if (catalogBaseDir && absUrl.startsWith(catalogBaseDir)) {
     const rel = absUrl.slice(catalogBaseDir.length).replace(/\.json($|\?)/, "$1");
     if (!rel || rel === "catalog") {
-      return "/catalog";
+      return `${prefix}catalog`;
     }
-    return "/" + rel.replace(/^\/+/, "");
+    return prefix + rel.replace(/^\/+/, "");
   }
 
   const withoutProtocol = absUrl.replace(/^https?:\/\//i, "");
-  return `/external/${withoutProtocol}`;
+  return `${prefix}external/${withoutProtocol}`;
 }
 
 export function renderOscLink({ data, title, stacUrl, className = "stac-link", attrs = "", innerHtml = null }) {

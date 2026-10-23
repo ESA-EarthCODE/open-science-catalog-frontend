@@ -17,19 +17,39 @@ import { mountOrUpdateCatalogPage } from "./pages/catalog-page.js";
 
 const appVersion = typeof APP_VERSION !== "undefined" ? APP_VERSION : "4.0.0-rc.1";
 
+export function getAppPrefix() {
+  const prefix = CONFIG.pathPrefix || "/";
+  return prefix.endsWith("/") ? prefix : `${prefix}/`;
+}
+
+export function toAppRelativePath(pathname) {
+  const prefix = getAppPrefix();
+  let path = pathname || "/";
+  if (prefix !== "/" && path.startsWith(prefix)) {
+    path = "/" + path.slice(prefix.length);
+  }
+  return path || "/";
+}
+
+export function toAppFullPath(relativePath) {
+  const prefix = getAppPrefix();
+  const cleanRel = (relativePath || "").replace(/^\/+/, "");
+  return prefix + cleanRel;
+}
+
 function getMenuItems() {
   const apiUrl = CONFIG.apiUrl || "https://eoapi.workspace.earthcode.eox.at/stac";
   const apiAccessUrl = apiUrl.replace(/\/$/, "") + "/api.html";
   return [
-    { title: "Catalogue", href: "/catalog" },
-    { title: "Metrics", href: "/metrics" },
-    { title: "Search", href: "/search" },
-    { title: "FAIR Principles", href: "/fair" },
+    { title: "Catalogue", href: toAppFullPath("catalog") },
+    { title: "Metrics", href: toAppFullPath("metrics") },
+    { title: "Search", href: toAppFullPath("search") },
+    { title: "FAIR Principles", href: toAppFullPath("fair") },
     { title: "API Access", href: apiAccessUrl },
   ];
 }
 
-function isCatalogRoute(pathname) {
+function isCatalogRoute(appRelativePath) {
   return ![
     "/",
     "/metrics",
@@ -37,12 +57,13 @@ function isCatalogRoute(pathname) {
     "/privacy-notice",
     "/fair",
     "/fair-preview",
-  ].includes(pathname);
+  ].includes(appRelativePath);
 }
 
 function getSuggestChangesUrls(pathname) {
+  const appPath = toAppRelativePath(pathname);
   const currentPath =
-    !pathname || pathname === "/" || pathname === "/catalog" ? "/catalog" : pathname;
+    !appPath || appPath === "/" || appPath === "/catalog" ? "/catalog" : appPath;
   const parts = currentPath.split("/");
   const lastPart = parts[parts.length - 1] || "catalog";
   const sessionTitle = `Edit ${lastPart}`;
@@ -65,6 +86,7 @@ function getSuggestChangesUrls(pathname) {
 
 function initShell() {
   const appRoot = document.getElementById("app");
+  const prefix = getAppPrefix();
   const consent = localStorage.getItem("esa-cookies-consent");
   const hasCookieConsent =
     document.cookie.includes("mtm_cookie_consent") ||
@@ -96,7 +118,7 @@ function initShell() {
           <button class="cookie-btn" data-cookie-consent="declined">
             Accept only essential cookies
           </button>
-          <a href="/privacy-notice" data-osc-link="/privacy-notice" class="cookie-link">See our Cookie Notice</a>
+          <a href="${escapeHtml(toAppFullPath("privacy-notice"))}" data-osc-link="${escapeHtml(toAppFullPath("privacy-notice"))}" class="cookie-link">See our Cookie Notice</a>
         </div>
       `
           : ""
@@ -111,13 +133,13 @@ function initShell() {
           <div class="footer-center">
             <a href="https://www.esa.int/Services/Terms_and_conditions" target="_blank" class="esa-footer-link">Terms &amp; Conditions</a>
             <span class="separator">|</span>
-            <a href="/privacy-notice" data-osc-link="/privacy-notice" class="esa-footer-link">Privacy Notice</a>
+            <a href="${escapeHtml(toAppFullPath("privacy-notice"))}" data-osc-link="${escapeHtml(toAppFullPath("privacy-notice"))}" class="esa-footer-link">Privacy Notice</a>
           </div>
           <div class="footer-right">
             <a href="https://github.com/EOEPCA/open-science-catalog-stac-browser" target="_blank" class="esa-footer-link">open-science-catalog</a>
             <span> v${escapeHtml(appVersion)} by</span>
             <a href="https://eox.at" target="_blank" class="esa-footer-link ms-1">
-              <img src="/img/EOX_Logo_weiss.svg" alt="EOX Logo" height="11" style="height: 11px !important; max-height: 11px !important; width: auto !important; vertical-align: middle; margin-top: -3px;" />
+              <img src="${escapeHtml(prefix)}img/EOX_Logo_weiss.svg" alt="EOX Logo" height="11" style="height: 11px !important; max-height: 11px !important; width: auto !important; vertical-align: middle; margin-top: -3px;" />
             </a>
           </div>
         </div>
@@ -296,59 +318,65 @@ function updateShellChrome(pathname) {
 
 async function handleRoute() {
   const url = new URL(window.location.href);
+  const appPath = toAppRelativePath(url.pathname);
 
   // 1. Redirect ?external=... to /external/...
   if (url.searchParams.has("external")) {
     const ext = url.searchParams.get("external");
-    window.history.replaceState({}, "", `/external/${ext}`);
+    window.history.replaceState({}, "", toAppFullPath(`external/${ext}`));
     return handleRoute();
   }
 
   // 2. Catch legacy hash URLs (e.g. #/products/foo/collection.json)
-  if (url.pathname === "/" && url.hash) {
+  if (appPath === "/" && url.hash) {
     const rawHash = url.hash.replace(/^#\/?/, "");
     if (rawHash) {
-      const cleanPath = "/" + rawHash.replace(/\.json$/, "");
-      window.history.replaceState({}, "", cleanPath);
+      const cleanPath = rawHash.replace(/\.json$/, "");
+      window.history.replaceState({}, "", toAppFullPath(cleanPath));
       return handleRoute();
     }
   }
 
   // 3. Strip trailing .json
   if (url.pathname.endsWith(".json")) {
-    const cleanPath = url.pathname.slice(0, -5) + url.search;
+    const cleanPath = toAppFullPath(appPath.replace(/\.json$/, "")) + url.search;
     window.history.replaceState({}, "", cleanPath);
     return handleRoute();
   }
 
-  const pathname = url.pathname || "/";
-  updateShellChrome(pathname);
+  updateShellChrome(appPath);
 
   const mainView = document.getElementById("main-view");
   if (!mainView) return;
 
-  if (pathname === "/") {
+  if (appPath === "/") {
     renderLandingPage(mainView);
-  } else if (pathname === "/metrics") {
+  } else if (appPath === "/metrics") {
     renderMetricsPage(mainView);
-  } else if (pathname === "/search") {
+  } else if (appPath === "/search") {
     renderSearchPage(mainView);
-  } else if (pathname === "/fair") {
+  } else if (appPath === "/fair") {
     renderFairPage(mainView);
-  } else if (pathname === "/fair-preview") {
+  } else if (appPath === "/fair-preview") {
     renderFairPreviewPage(mainView);
-  } else if (pathname === "/privacy-notice") {
+  } else if (appPath === "/privacy-notice") {
     renderPrivacyNoticePage(mainView);
   } else {
-    await mountOrUpdateCatalogPage(mainView, pathname, (syncedPath) => {
-      updateShellChrome(syncedPath);
+    await mountOrUpdateCatalogPage(mainView, url.pathname, (syncedPath) => {
+      updateShellChrome(toAppRelativePath(syncedPath));
     });
   }
 }
 
 export function navigateTo(path) {
-  if (window.location.pathname + window.location.search !== path) {
-    window.history.pushState({}, "", path);
+  const fullTarget = path.startsWith("http")
+    ? path
+    : path.startsWith("/") && !path.startsWith(getAppPrefix())
+      ? toAppFullPath(path)
+      : path;
+
+  if (window.location.pathname + window.location.search !== fullTarget) {
+    window.history.pushState({}, "", fullTarget);
   }
   window.scrollTo({ left: 0, top: 0 });
   handleRoute();

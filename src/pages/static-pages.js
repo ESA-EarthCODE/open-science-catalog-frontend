@@ -2,7 +2,7 @@ import CONFIG from "../merged-config.js";
 import { escapeHtml } from "../utils/links.js";
 
 function buildStaticParams(includeProductBase = false) {
-  const prefix = CONFIG.pathPrefix || "/";
+  const prefix = (CONFIG.pathPrefix || "/").replace(/\/?$/, "/");
   const params = new URLSearchParams({
     baseUrl: CONFIG.staticEndpoint || "",
     apiUrl: CONFIG.apiUrl || "",
@@ -15,7 +15,7 @@ function buildStaticParams(includeProductBase = false) {
 }
 
 export function renderLandingPage(container) {
-  const prefix = CONFIG.pathPrefix || "/";
+  const prefix = (CONFIG.pathPrefix || "/").replace(/\/?$/, "/");
   const src = `${prefix}index-static.html?${buildStaticParams(false)}`;
   container.innerHTML = `
     <div class="iframe-wrapper landing-iframe-wrapper">
@@ -32,7 +32,7 @@ export function renderLandingPage(container) {
 }
 
 export function renderMetricsPage(container) {
-  const prefix = CONFIG.pathPrefix || "/";
+  const prefix = (CONFIG.pathPrefix || "/").replace(/\/?$/, "/");
   const src = `${prefix}metrics.html?${buildStaticParams(false)}`;
   container.innerHTML = `
     <div class="iframe-wrapper shell-iframe-wrapper">
@@ -49,7 +49,7 @@ export function renderMetricsPage(container) {
 }
 
 export function renderSearchPage(container) {
-  const prefix = CONFIG.pathPrefix || "/";
+  const prefix = (CONFIG.pathPrefix || "/").replace(/\/?$/, "/");
   const src = `${prefix}search.html?${buildStaticParams(true)}`;
   container.innerHTML = `
     <div class="iframe-wrapper shell-iframe-wrapper">

@@ -106,7 +106,11 @@ export default defineConfig(async ({ mode }) => {
         name: "serve-prebuilt-public-esm",
         configureServer(server) {
           server.middlewares.use((req, res, next) => {
-            const urlPath = (req.url || "").split("?")[0];
+            let urlPath = (req.url || "").split("?")[0];
+            const base = (config.pathPrefix || "/").replace(/\/$/, "");
+            if (base && urlPath.startsWith(base)) {
+              urlPath = urlPath.slice(base.length);
+            }
             if (urlPath.startsWith("/stac-browser/") || urlPath.startsWith("/eox/")) {
               const filePath = join(process.cwd(), "public", urlPath);
               if (existsSync(filePath)) {

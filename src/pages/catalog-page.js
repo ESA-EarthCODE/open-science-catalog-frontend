@@ -6,7 +6,12 @@ import "../widgets/osc-fair-assessment.js";
 import "../widgets/osc-forum-topics.js";
 
 function toInternalBrowserPath(pathname) {
-  let rel = (pathname || "").replace(/^\/+/, "");
+  const prefix = (CONFIG.pathPrefix || "/").replace(/\/?$/, "/");
+  let rel = pathname || "";
+  if (prefix !== "/" && rel.startsWith(prefix)) {
+    rel = "/" + rel.slice(prefix.length);
+  }
+  rel = rel.replace(/^\/+/, "");
   if (!rel || rel === "catalog" || rel === "catalog/") {
     return "/";
   }
@@ -23,16 +28,14 @@ function toInternalBrowserPath(pathname) {
 }
 
 function toOuterCleanPath(internalPath) {
-  if (!internalPath) return "/catalog";
+  const prefix = (CONFIG.pathPrefix || "/").replace(/\/?$/, "/");
+  if (!internalPath) return `${prefix}catalog`;
   const [pathname] = internalPath.split("?");
   let clean = pathname.replace(/\.json$/, "");
   if (!clean || clean === "/" || clean === "/index" || clean === "/catalog") {
-    return "/catalog";
+    return `${prefix}catalog`;
   }
-  if (!clean.startsWith("/")) {
-    clean = "/" + clean;
-  }
-  return clean;
+  return prefix + clean.replace(/^\/+/, "");
 }
 
 function injectShadowEnhancements(browserEl) {
