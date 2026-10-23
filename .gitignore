@@ -1,0 +1,38 @@
+.DS_Store
+.cache/
+node_modules/
+/dist/
+
+# local env files
+.env
+.env.*
+
+# configuration overrides
+config.local.*
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# EOx assets downloaded at build time
+public/eox/
+
+# STAC Browser Web Component assets built/copied at build time
+public/stac-browser/

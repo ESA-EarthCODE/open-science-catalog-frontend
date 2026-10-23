@@ -1,0 +1,362 @@
+import "@eox/esa-ui/components/header.js";
+import "@eox/esa-ui/components/navbar.js";
+import "@eox/esa-ui/components/menu.js";
+
+import "./styles/main.css";
+import CONFIG from "./merged-config.js";
+import { escapeHtml } from "./utils/links.js";
+import {
+  renderLandingPage,
+  renderMetricsPage,
+  renderSearchPage,
+  renderFairPage,
+  renderFairPreviewPage,
+  renderPrivacyNoticePage,
+} from "./pages/static-pages.js";
+import { mountOrUpdateCatalogPage } from "./pages/catalog-page.js";
+
+const appVersion = typeof APP_VERSION !== "undefined" ? APP_VERSION : "4.0.0-rc.1";
+
+function getMenuItems() {
+  const apiUrl = CONFIG.apiUrl || "https://eoapi.workspace.earthcode.eox.at/stac";
+  const apiAccessUrl = apiUrl.replace(/\/$/, "") + "/api.html";
+  return [
+    { title: "Catalogue", href: "/catalog" },
+    { title: "Metrics", href: "/metrics" },
+    { title: "Search", href: "/search" },
+    { title: "FAIR Principles", href: "/fair" },
+    { title: "API Access", href: apiAccessUrl },
+  ];
+}
+
+function isCatalogRoute(pathname) {
+  return ![
+    "/",
+    "/metrics",
+    "/search",
+    "/privacy-notice",
+    "/fair",
+    "/fair-preview",
+  ].includes(pathname);
+}
+
+function getSuggestChangesUrls(pathname) {
+  const currentPath =
+    !pathname || pathname === "/" || pathname === "/catalog" ? "/catalog" : pathname;
+  const parts = currentPath.split("/");
+  const lastPart = parts[parts.length - 1] || "catalog";
+  const sessionTitle = `Edit ${lastPart}`;
+  const workspaceRoot =
+    CONFIG.workspaceRoot || "https://workspace.earthcode-staging.earthcode.eox.at";
+  const githubDataRoot =
+    CONFIG.githubDataRoot ||
+    "https://github.com/ESA-EarthCODE/open-science-catalog-metadata/tree/main";
+
+  const editorUrl = `${workspaceRoot}/osc-editor?session=${encodeURIComponent(
+    sessionTitle
+  )}&automation=edit-file&file=${encodeURIComponent(
+    "https://raw.githubusercontent.com/ESA-EarthCODE/open-science-catalog-metadata/refs/heads/main" +
+      currentPath +
+      ".json"
+  )}`;
+  const githubUrl = `${githubDataRoot.replace(/\/$/, "")}${currentPath}.json`;
+  return { editorUrl, githubUrl };
+}
+
+function initShell() {
+  const appRoot = document.getElementById("app");
+  const consent = localStorage.getItem("esa-cookies-consent");
+  const hasCookieConsent =
+    document.cookie.includes("mtm_cookie_consent") ||
+    document.cookie.includes("mtm_consent_removed");
+  const showCookieBanner = !consent && !hasCookieConsent;
+
+  appRoot.innerHTML = `
+    <div id="app-shell">
+      <esa-menu id="esa-menu-el"></esa-menu>
+
+      <header class="esa-header-wrapper" id="esa-header-wrapper">
+        <esa-header></esa-header>
+        <esa-navbar id="esa-navbar-el" brand-title="Open Science Catalogue"></esa-navbar>
+      </header>
+
+      <main id="main-view" class="flex-grow-1 position-relative"></main>
+
+      ${
+        showCookieBanner
+          ? `
+        <div id="esa-cookie-banner" class="esa-cookie-banner">
+          We use cookies which are essential for you to access our website and/or to
+          provide you with our services, enable you to share our website content via
+          your social media accounts and allow us to measure and improve the
+          performance of our website.<br />
+          <button class="cookie-btn" data-cookie-consent="accepted">
+            Accept all cookies
+          </button>
+          <button class="cookie-btn" data-cookie-consent="declined">
+            Accept only essential cookies
+          </button>
+          <a href="/privacy-notice" data-osc-link="/privacy-notice" class="cookie-link">See our Cookie Notice</a>
+        </div>
+      `
+          : ""
+      }
+
+      <footer class="esa-footer" id="esa-footer">
+        <div class="esa-footer-container">
+          <div class="footer-left">
+            &copy; ${new Date().getFullYear()} by
+            <a href="https://www.esa.int/" target="_blank" class="esa-footer-link">ESA</a>
+          </div>
+          <div class="footer-center">
+            <a href="https://www.esa.int/Services/Terms_and_conditions" target="_blank" class="esa-footer-link">Terms &amp; Conditions</a>
+            <span class="separator">|</span>
+            <a href="/privacy-notice" data-osc-link="/privacy-notice" class="esa-footer-link">Privacy Notice</a>
+          </div>
+          <div class="footer-right">
+            <a href="https://github.com/EOEPCA/open-science-catalog-stac-browser" target="_blank" class="esa-footer-link">open-science-catalog</a>
+            <span> v${escapeHtml(appVersion)} by</span>
+            <a href="https://eox.at" target="_blank" class="esa-footer-link ms-1">
+              <img src="/img/EOX_Logo_weiss.svg" alt="EOX Logo" height="11" style="height: 11px !important; max-height: 11px !important; width: auto !important; vertical-align: middle; margin-top: -3px;" />
+            </a>
+          </div>
+        </div>
+
+        <div id="suggest-changes-dial" class="suggest-changes-dial" style="display: none;">
+          <div class="suggest-changes-menu">
+            <a id="suggest-editor-link" href="#" target="_blank" class="suggest-btn btn-editor">
+              <i class="mdi mdi-pencil"></i>
+              Edit metadata
+            </a>
+            <a id="suggest-github-link" href="#" target="_blank" class="suggest-btn btn-github">
+              <i class="mdi mdi-github"></i>
+              View file on GitHub
+            </a>
+          </div>
+          <button class="suggest-toggle-btn">
+            <i class="mdi mdi-pencil pencil-icon"></i>
+            <i class="mdi mdi-close close-icon"></i>
+            <span class="btn-text">Suggest changes</span>
+          </button>
+        </div>
+      </footer>
+    </div>
+  `;
+
+  // Wire cookie consent buttons
+  appRoot.addEventListener("click", (e) => {
+    const cookieBtn = e.target.closest("[data-cookie-consent]");
+    if (cookieBtn) {
+      const status = cookieBtn.getAttribute("data-cookie-consent");
+      if (status === "accepted") {
+        if (window._paq) window._paq.push(["rememberCookieConsentGiven"]);
+      } else {
+        if (window._paq) {
+          window._paq.push(["forgetCookieConsentGiven"]);
+          window._paq.push(["optUserOut"]);
+        }
+      }
+      localStorage.setItem("esa-cookies-consent", status);
+      document.getElementById("esa-cookie-banner")?.remove();
+      return;
+    }
+
+    // Intercept internal [data-osc-link] anchor clicks
+    const oscLink = e.target.closest("[data-osc-link]");
+    if (oscLink) {
+      if (
+        e.metaKey ||
+        e.altKey ||
+        e.ctrlKey ||
+        e.shiftKey ||
+        (e.button !== undefined && e.button !== 0)
+      ) {
+        return;
+      }
+      e.preventDefault();
+      const targetPath = oscLink.getAttribute("data-osc-link");
+      if (targetPath) {
+        navigateTo(targetPath);
+      }
+    }
+  });
+
+  // Wire ESA-UI navbar and mobile drawer
+  const setupEsaUi = () => {
+    const nav = document.getElementById("esa-navbar-el");
+    const menu = document.getElementById("esa-menu-el");
+    const items = getMenuItems();
+
+    if (nav) {
+      nav.menuItems = items;
+      if (nav.render) nav.render();
+    }
+    if (menu) {
+      menu.menuItems = items;
+      if (menu.render) menu.render();
+    }
+
+    if (nav?.shadowRoot) {
+      const menuBtn = nav.shadowRoot.querySelector("#menu-open");
+      if (menuBtn && menu?.shadowRoot) {
+        menuBtn.onclick = () => {
+          const cMenu = menu.shadowRoot.querySelector(".c-menu");
+          if (cMenu) {
+            cMenu.classList.add("is-open");
+            document.body.classList.add("is-locked");
+          }
+        };
+      }
+    }
+
+    if (menu?.shadowRoot) {
+      const closeBtn = menu.shadowRoot.querySelector("#menu-close");
+      if (closeBtn) {
+        closeBtn.onclick = () => {
+          const cMenu = menu.shadowRoot.querySelector(".c-menu");
+          if (cMenu) {
+            cMenu.classList.remove("is-open");
+            document.body.classList.remove("is-locked");
+          }
+        };
+      }
+    }
+
+    [nav, menu].forEach((el) => {
+      if (el?.shadowRoot && !el._routingAttached) {
+        el._routingAttached = true;
+        el.shadowRoot.addEventListener("click", (event) => {
+          const anchor = event
+            .composedPath()
+            .find((target) => target.tagName === "A");
+          if (!anchor) return;
+          const href = anchor.getAttribute("href");
+          if (!href) return;
+          if (href.startsWith("http") || anchor.getAttribute("target") === "_blank") {
+            event.preventDefault();
+            window.open(href, "_blank");
+          } else if (href.startsWith("/")) {
+            event.preventDefault();
+            navigateTo(href);
+          }
+        });
+      }
+    });
+  };
+
+  Promise.all([
+    customElements.whenDefined("esa-header"),
+    customElements.whenDefined("esa-navbar"),
+    customElements.whenDefined("esa-menu"),
+  ]).then(setupEsaUi);
+  setupEsaUi();
+
+  // Listen for live-preview data injection via window.postMessage
+  window.addEventListener("message", (event) => {
+    if (event.data && event.data.data) {
+      const browserEl = document.querySelector("stac-browser");
+      if (browserEl && typeof browserEl.setData === "function") {
+        const previewUrl =
+          event.data.url ||
+          `${CONFIG.staticEndpoint || "https://esa-earthcode.github.io/open-science-catalog-metadata/"}live-preview/collection.json`;
+        browserEl.setData(event.data.data, previewUrl);
+      }
+    }
+  });
+}
+
+function updateShellChrome(pathname) {
+  const query = new URLSearchParams(window.location.search);
+  const isEmbed = pathname === "/fair-preview" && query.get("embed") === "true";
+  const isLanding = pathname === "/";
+  const isCatalog = isCatalogRoute(pathname);
+
+  const menuEl = document.getElementById("esa-menu-el");
+  const headerEl = document.getElementById("esa-header-wrapper");
+  const footerEl = document.getElementById("esa-footer");
+  const cookieEl = document.getElementById("esa-cookie-banner");
+  const dialEl = document.getElementById("suggest-changes-dial");
+
+  if (menuEl) menuEl.style.display = isEmbed ? "none" : "";
+  if (headerEl) headerEl.style.display = isEmbed ? "none" : "";
+  if (cookieEl) cookieEl.style.display = isEmbed ? "none" : "";
+  if (footerEl) footerEl.style.display = isEmbed || isLanding ? "none" : "";
+
+  if (dialEl) {
+    dialEl.style.display = !isEmbed && isCatalog ? "flex" : "none";
+    if (isCatalog) {
+      const { editorUrl, githubUrl } = getSuggestChangesUrls(pathname);
+      const editorLink = document.getElementById("suggest-editor-link");
+      const githubLink = document.getElementById("suggest-github-link");
+      if (editorLink) editorLink.setAttribute("href", editorUrl);
+      if (githubLink) githubLink.setAttribute("href", githubUrl);
+    }
+  }
+}
+
+async function handleRoute() {
+  const url = new URL(window.location.href);
+
+  // 1. Redirect ?external=... to /external/...
+  if (url.searchParams.has("external")) {
+    const ext = url.searchParams.get("external");
+    window.history.replaceState({}, "", `/external/${ext}`);
+    return handleRoute();
+  }
+
+  // 2. Catch legacy hash URLs (e.g. #/products/foo/collection.json)
+  if (url.pathname === "/" && url.hash) {
+    const rawHash = url.hash.replace(/^#\/?/, "");
+    if (rawHash) {
+      const cleanPath = "/" + rawHash.replace(/\.json$/, "");
+      window.history.replaceState({}, "", cleanPath);
+      return handleRoute();
+    }
+  }
+
+  // 3. Strip trailing .json
+  if (url.pathname.endsWith(".json")) {
+    const cleanPath = url.pathname.slice(0, -5) + url.search;
+    window.history.replaceState({}, "", cleanPath);
+    return handleRoute();
+  }
+
+  const pathname = url.pathname || "/";
+  updateShellChrome(pathname);
+
+  const mainView = document.getElementById("main-view");
+  if (!mainView) return;
+
+  if (pathname === "/") {
+    renderLandingPage(mainView);
+  } else if (pathname === "/metrics") {
+    renderMetricsPage(mainView);
+  } else if (pathname === "/search") {
+    renderSearchPage(mainView);
+  } else if (pathname === "/fair") {
+    renderFairPage(mainView);
+  } else if (pathname === "/fair-preview") {
+    renderFairPreviewPage(mainView);
+  } else if (pathname === "/privacy-notice") {
+    renderPrivacyNoticePage(mainView);
+  } else {
+    await mountOrUpdateCatalogPage(mainView, pathname, (syncedPath) => {
+      updateShellChrome(syncedPath);
+    });
+  }
+}
+
+export function navigateTo(path) {
+  if (window.location.pathname + window.location.search !== path) {
+    window.history.pushState({}, "", path);
+  }
+  window.scrollTo({ left: 0, top: 0 });
+  handleRoute();
+}
+
+window.addEventListener("popstate", () => {
+  handleRoute();
+});
+
+initShell();
+handleRoute();

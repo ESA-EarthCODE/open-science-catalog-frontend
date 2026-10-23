@@ -1,0 +1,43 @@
+name: CI & Tests
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Prepare external CDN & STAC Browser Web Component assets
+        # NOTE: Until STAC Browser v6.0.0 is published on npm (@radiantearth/stac-browser),
+        # this builds <stac-browser> from the upstream draft PR (radiantearth/stac-browser#778).
+        run: npm run prepare:assets
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: npm test

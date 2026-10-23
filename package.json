@@ -1,0 +1,25 @@
+{
+  "name": "open-science-catalogue-frontend",
+  "version": "4.0.0-rc.1",
+  "private": true,
+  "type": "module",
+  "description": "Pure Vanilla JS + Web Components frontend for the ESA Open Science Catalogue (OSC), embedding <stac-browser> as a Web Component.",
+  "scripts": {
+    "prepare:assets": "node scripts/download-cdns.js && node scripts/build-stac-browser.js",
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 8080",
+    "test": "playwright test"
+  },
+  "$comment": "TODO: Once STAC Browser v6.0.0 is released on npm (radiantearth/stac-browser#1034), add '@radiantearth/stac-browser': '^6.0.0' to dependencies below. Until then, scripts/build-stac-browser.js builds <stac-browser> from the upstream draft PR #778 (branch 'use-as-component').",
+  "dependencies": {
+    "@eox/esa-ui": "1.19.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "vite": "^6.0.0",
+    "vite-plugin-ejs": "^1.7.0",
+    "yargs": "^18.0.0"
+  }
+}
