@@ -374,6 +374,11 @@ code {
 
 #main-view {
   z-index: 1;
+  padding-bottom: 40px;
+}
+
+#main-view:has(.landing-iframe-wrapper) {
+  padding-bottom: 0;
 }
 
 esa-navbar {
@@ -386,13 +391,14 @@ esa-menu {
 }
 
 .esa-footer {
+  position: sticky;
+  bottom: 0;
   background-color: var(--esa-primary);
   border-top: 4px solid var(--esa-border-color);
   color: var(--esa-text-light);
   padding: 6px 16px;
-  z-index: 99;
+  z-index: 1000;
   font-size: 0.85rem;
-  position: relative;
 }
 
 .footer-right img {
