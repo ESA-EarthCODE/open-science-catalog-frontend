@@ -2,11 +2,15 @@
 
 A lightweight, **100% Vanilla JavaScript & Web Components** frontend for the European Space Agency's (ESA) **Open Science Catalogue (OSC)** that integrates **STAC Browser** as a native Web Component (`<stac-browser>`) alongside custom OSC views (Landing Page, Search, Metrics, FAIR Principles, and FAIR Preview).
 
+> **⚠️ Project Status: Experimental Rewrite / Port**  
+> This repository is a rewrite and port of the previous frontend located at [**`EOEPCA/open-science-catalog-stac-browser`**](https://github.com/EOEPCA/open-science-catalog-stac-browser).  
+> **This setup is currently experimental** and depends on the upstream STAC Browser Web Component PR to be merged: [**`radiantearth/stac-browser#778`**](https://github.com/radiantearth/stac-browser/pull/778).
+
 ---
 
 ## Architecture Overview
 
-Unlike the previous forked STAC Browser + Vue + `<iframe>` setup (`open-science-catalog-stac-browser`), this repository is a standalone, framework-free application (with `@eox/esa-ui` as its only runtime dependency) that embeds `<stac-browser>` and custom `<osc-*>` Web Components directly in the DOM:
+Unlike the previous forked STAC Browser + Vue + `<iframe>` setup in the old repository ([`open-science-catalog-stac-browser`](https://github.com/EOEPCA/open-science-catalog-stac-browser)), this repository is a standalone, framework-free rewrite (with `@eox/esa-ui` as its only runtime dependency) that embeds `<stac-browser>` and custom `<osc-*>` Web Components directly in the DOM:
 
 ```text
 +-------------------------------------------------------------------+
@@ -45,16 +49,17 @@ All custom OSC widgets are implemented as standard `HTMLElement` Web Components 
 - **Runtime Config (`config.js`):** Passes `basemaps` (EOX Terrain Light), `ignoreMetadata` (filtering out `fair:*`, `osc:*`, and deduplicated DOIs), and `preprocessSTAC` (handling canonical vs. versioned DOIs and deduplicating links) via `<stac-browser>.config`.
 - **CSS Shadow Parts (`::part()`):** Uses `stac-browser.is-osc-product::part(header)`, `::part(catalogs)`, `::part(details)`, and `::part(items)` to render the 2-column Product page layout with items full-width below.
 
-> For a detailed technical analysis of this architecture, see [`docs/web-component-feasibility-analysis.md`](docs/web-component-feasibility-analysis.md).
-
 ---
 
-## Note on STAC Browser Web Component Source (Draft PR #778 -> v6.0.0)
+## Upstream Dependency & Experimental Setup (Draft PR #778 -> v6.0.0)
 
-> **IMPORTANT:**  
-> Currently, the `<stac-browser>` web component is built from the upstream STAC Browser draft PR [`radiantearth/stac-browser#778`](https://github.com/radiantearth/stac-browser/pull/778) (`use-as-component` branch) via [`scripts/build-stac-browser.js`](scripts/build-stac-browser.js) and output to `public/stac-browser/`.
+> **⚠️ EXPERIMENTAL SETUP & UPSTREAM PR DEPENDENCY:**  
+> This setup is currently **experimental** and depends directly on the upstream STAC Browser pull request being merged:  
+> 👉 [**`radiantearth/stac-browser#778`**](https://github.com/radiantearth/stac-browser/pull/778) (`use-as-component` branch).
 >
-> **Once STAC Browser v6.0.0 is officially released on npm ([`radiantearth/stac-browser#1034`](https://github.com/radiantearth/stac-browser/pull/1034)):**
+> Currently, the `<stac-browser>` web component is built from this upstream PR branch via [`scripts/build-stac-browser.js`](scripts/build-stac-browser.js) and output to `public/stac-browser/`.
+>
+> **Once PR #778 is merged and STAC Browser v6.0.0 is officially released on npm ([`radiantearth/stac-browser#1034`](https://github.com/radiantearth/stac-browser/pull/1034)):**
 > 1. Install the official npm package:
 >    ```bash
 >    npm install @radiantearth/stac-browser@^6.0.0
