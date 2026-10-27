@@ -110,4 +110,5 @@ docker run -p 8080:8080 \
 
 - **`ci.yml`:** Runs on push and pull requests to `main` and `develop`. Builds the bundle and executes the Playwright E2E test suite.
 - **`deploy-gh-pages.yml`:** Runs on pushes to `develop` / `main` (and manual `workflow_dispatch`). Builds the static site with SPA fallback (`404.html`) and deploys to GitHub Pages.
-- **`publish-docker.yml`:** Runs on version tags (`v*`), GitHub releases, or manual `workflow_dispatch`. Builds and publishes the Docker image to GitHub Container Registry (`ghcr.io`) and Docker Hub (when `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets are configured).
+- **`deploy-main.yaml`:** Runs on pushes targeting tags (`*`). Builds the Docker image and publishes it to GitHub Container Registry (`ghcr.io/esa-earthcode/open-science-catalog-frontend:<tag>`).
+- **`deploy-dev.yaml`:** Runs on pushes to all branches except `main`. Builds the development Docker image tagged with version, branch, and timestamp (`ghcr.io/esa-earthcode/open-science-catalog-frontend:v<version>-<branch>.<timestamp>`) and publishes it to GitHub Container Registry (`ghcr.io`).
