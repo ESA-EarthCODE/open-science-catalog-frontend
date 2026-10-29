@@ -367,7 +367,9 @@ code {
   padding-bottom: 40px;
 }
 
-#main-view:has(.landing-iframe-wrapper) {
+#main-view:has(.landing-iframe-wrapper),
+body.is-embed #main-view,
+#app-shell.is-embed #main-view {
   padding-bottom: 0;
 }
 

@@ -91,8 +91,11 @@ function injectShadowEnhancements(browserEl) {
 export async function mountOrUpdateCatalogPage(container, pathname, onUrlSynced) {
   let browserEl = container.querySelector("stac-browser");
   const targetInternalPath = toInternalBrowserPath(pathname);
+  const query = new URLSearchParams(window.location.search);
+  const isEmbed = query.get("embed") === "true";
 
   if (browserEl) {
+    browserEl.style.setProperty("--sb-header-margin", isEmbed ? "0px" : "140px");
     if (browserEl._currentInternalPath !== targetInternalPath) {
       browserEl._currentInternalPath = targetInternalPath;
       browserEl.navigate(targetInternalPath);
@@ -126,7 +129,7 @@ export async function mountOrUpdateCatalogPage(container, pathname, onUrlSynced)
       "--sb-header-hover-color: #000000",
       "--sb-header-text-shadow: none",
       "--sb-header-button-background: transparent",
-      "--sb-header-margin: 140px",
+      `--sb-header-margin: ${isEmbed ? "0px" : "140px"}`,
     ].join("; ")
   );
 
@@ -184,11 +187,25 @@ export async function mountOrUpdateCatalogPage(container, pathname, onUrlSynced)
     }
     browserEl._currentInternalPath = internalPath.split("?")[0];
     const outerPath = toOuterCleanPath(internalPath);
+    const currentSearch = window.location.search;
+    const fullTarget = currentSearch ? `${outerPath}${currentSearch}` : outerPath;
     if (window.location.pathname !== outerPath) {
-      window.history.replaceState({}, "", outerPath);
+      window.history.replaceState({}, "", fullTarget);
       if (typeof onUrlSynced === "function") {
         onUrlSynced(outerPath);
       }
+    }
+
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage(
+        {
+          type: "navigate",
+          navigate: event.detail || {},
+          path: outerPath,
+          url: event.detail?.url,
+        },
+        "*"
+      );
     }
   });
 
@@ -196,11 +213,25 @@ export async function mountOrUpdateCatalogPage(container, pathname, onUrlSynced)
     const stacData = event.detail?.data || null;
     const stacUrl = event.detail?.url || null;
 
+    if (browserEl._isLivePreview) {
+      if (stacUrl === CONFIG.catalogUrl && browserEl._livePreviewData) {
+        const store = browserEl._instance?.store;
+        const pUrl = browserEl._livePreviewUrl;
+        browserEl.setData(browserEl._livePreviewData, pUrl);
+        if (store) {
+          const reqUrl = store.getters.getRequestUrl(pUrl, null, true);
+          store.commit("showPage", { url: reqUrl });
+        }
+        return;
+      }
+    }
+
     // Safeguard against upstream race condition (fixed in radiantearth/stac-browser#1035 on main,
     // pending merge into use-as-component): if a deep-link navigation was initiated on mount
     // and the initial root catalog load finishes slightly later and overwrites state.data,
     // immediately restore the requested deep-link entity.
     if (
+      initialNavigationPending &&
       browserEl._currentInternalPath &&
       browserEl._currentInternalPath !== "/" &&
       stacUrl === CONFIG.catalogUrl &&
@@ -241,9 +272,36 @@ export async function mountOrUpdateCatalogPage(container, pathname, onUrlSynced)
   wrapper.appendChild(browserEl);
   injectShadowEnhancements(browserEl);
 
+  const notifyReady = () => {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage(
+        {
+          type: "ready",
+          ready: true,
+          navigate: { path: targetInternalPath },
+          path: toOuterCleanPath(targetInternalPath),
+        },
+        "*"
+      );
+    }
+  };
+
+  // Apply buffered live-preview STAC data if received during initial loading
+  if (window.__pendingStacPreview && typeof browserEl.setData === "function") {
+    browserEl._isLivePreview = true;
+    browserEl._livePreviewData = window.__pendingStacPreview.data;
+    browserEl._livePreviewUrl = window.__pendingStacPreview.url;
+    const { data, url } = window.__pendingStacPreview;
+    window.__pendingStacPreview = null;
+    browserEl.setData(data, url);
+  }
+
   if (targetInternalPath && targetInternalPath !== "/") {
     browserEl.navigate(targetInternalPath).finally(() => {
       initialNavigationPending = false;
+      notifyReady();
     });
+  } else {
+    notifyReady();
   }
 }

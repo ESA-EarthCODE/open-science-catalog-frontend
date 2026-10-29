@@ -236,4 +236,130 @@ test.describe("Open Science Catalogue Frontend", () => {
     expect(dataAccessBox).not.toBeNull();
     expect(dataAccessBox.x).toBeGreaterThan(introBox.x + 200);
   });
+
+  test("supports embed=true on /catalog to hide ESA chrome and reset header margin", async ({
+    page,
+  }) => {
+    await page.goto("/catalog?embed=true");
+    const browserEl = page.locator("stac-browser");
+    await expect(browserEl).toBeAttached();
+
+    // In embed=true mode, ESA chrome is hidden
+    await expect(page.locator("#esa-header-wrapper")).toBeHidden();
+    await expect(page.locator("#esa-footer")).toBeHidden();
+    await expect(page.locator("#suggest-changes-dial")).toBeHidden();
+
+    // Verify --sb-header-margin is set to 0px for frameless embedding
+    const headerMargin = await browserEl.evaluate((el) => {
+      return el.style.getPropertyValue("--sb-header-margin");
+    });
+    expect(headerMargin).toBe("0px");
+  });
+
+  test("emits navigate and ready postMessage events to parent when embedded in an iframe", async ({
+    page,
+  }) => {
+    // Navigate to root first so that iframe creation inherits the proper origin
+    await page.goto("/");
+    await page.evaluate(() => {
+      window.receivedMessages = [];
+      window.addEventListener("message", (event) => {
+        if (event.data && (event.data.navigate || event.data.type === "ready")) {
+          window.receivedMessages.push(event.data);
+        }
+      });
+      const iframe = document.createElement("iframe");
+      iframe.id = "test-frame";
+      iframe.src = "/catalog?embed=true";
+      document.body.appendChild(iframe);
+    });
+
+    // Wait until parent receives at least one navigate or ready message
+    await page.waitForFunction(
+      () => {
+        return (
+          window.receivedMessages &&
+          window.receivedMessages.some((msg) => msg.navigate || msg.type === "ready")
+        );
+      },
+      { timeout: 15000 }
+    );
+
+    const messages = await page.evaluate(() => window.receivedMessages);
+    expect(messages.length).toBeGreaterThan(0);
+    const hasNavigate = messages.some((m) => !!m.navigate);
+    expect(hasNavigate).toBe(true);
+  });
+
+  test("renders on-the-fly STAC entity preview injected via window.postMessage", async ({
+    page,
+  }) => {
+    await page.goto("/catalog?embed=true");
+    const browserEl = page.locator("stac-browser");
+    await expect(browserEl).toBeAttached();
+
+    // Inject custom STAC data on-the-fly via window.postMessage
+    const previewData = {
+      type: "Collection",
+      stac_version: "1.0.0",
+      id: "preview-live-collection",
+      title: "Live Editor Preview Dataset",
+      description: "On-the-fly STAC entity preview injected from git-clerk.",
+      license: "CC-BY-4.0",
+      "osc:type": "product",
+      extent: {
+        spatial: { bbox: [[-180, -90, 180, 90]] },
+        temporal: { interval: [["2023-01-01T00:00:00Z", "2024-01-01T00:00:00Z"]] },
+      },
+      links: [],
+    };
+
+    await page.evaluate((data) => {
+      window.postMessage({ data }, "*");
+    }, previewData);
+
+    // Verify STAC Browser renders the injected title and description
+    await expect(page.getByRole("heading", { name: "Live Editor Preview Dataset" })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText("On-the-fly STAC entity preview injected from git-clerk.")
+    ).toBeVisible();
+  });
+
+  test("buffers and applies postMessage preview data when received while at root /", async ({
+    page,
+  }) => {
+    // Navigate to root / (the landing page)
+    await page.goto("/");
+    await expect(page.locator(".landing-iframe-wrapper")).toBeAttached();
+
+    const previewData = {
+      type: "Collection",
+      stac_version: "1.0.0",
+      id: "buffered-preview-collection",
+      title: "Buffered Preview Dataset from Root",
+      description: "Injected while on landing page and auto-navigated to catalog.",
+      license: "CC-BY-4.0",
+      "osc:type": "product",
+      extent: {
+        spatial: { bbox: [[-180, -90, 180, 90]] },
+        temporal: { interval: [["2023-01-01T00:00:00Z", "2024-01-01T00:00:00Z"]] },
+      },
+      links: [],
+    };
+
+    // Post data while on the landing page
+    await page.evaluate((data) => {
+      window.postMessage({ data }, "*");
+    }, previewData);
+
+    // Verify it automatically navigates to /catalog and renders the preview data
+    await expect(
+      page.getByRole("heading", { name: "Buffered Preview Dataset from Root" })
+    ).toBeVisible({ timeout: 15000 });
+    await expect(
+      page.getByText("Injected while on landing page and auto-navigated to catalog.")
+    ).toBeVisible();
+  });
 });

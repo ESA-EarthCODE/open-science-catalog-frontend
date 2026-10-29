@@ -276,12 +276,38 @@ function initShell() {
   // Listen for live-preview data injection via window.postMessage
   window.addEventListener("message", (event) => {
     if (event.data && event.data.data) {
+      const catalogBase = (CONFIG.catalogUrl || "").replace(/\/?[^/]+$/, "");
+      const previewUrl =
+        event.data.url ||
+        `${catalogBase || CONFIG.staticEndpoint || "https://esa-earthcode.github.io/open-science-catalog-metadata"}/live-preview/collection.json`;
       const browserEl = document.querySelector("stac-browser");
       if (browserEl && typeof browserEl.setData === "function") {
-        const previewUrl =
-          event.data.url ||
-          `${CONFIG.staticEndpoint || "https://esa-earthcode.github.io/open-science-catalog-metadata/"}live-preview/collection.json`;
+        browserEl._isLivePreview = true;
+        browserEl._livePreviewData = event.data.data;
+        browserEl._livePreviewUrl = previewUrl;
         browserEl.setData(event.data.data, previewUrl);
+      } else {
+        // Buffer preview data if <stac-browser> is still loading or on a non-catalog page
+        window.__pendingStacPreview = {
+          data: event.data.data,
+          url: previewUrl,
+        };
+        const appPath = toAppRelativePath(window.location.pathname);
+        if (!isCatalogRoute(appPath)) {
+          navigateTo(toAppFullPath("catalog" + window.location.search));
+        } else {
+          customElements.whenDefined("stac-browser").then(() => {
+            const el = document.querySelector("stac-browser");
+            if (el && typeof el.setData === "function" && window.__pendingStacPreview) {
+              el._isLivePreview = true;
+              el._livePreviewData = window.__pendingStacPreview.data;
+              el._livePreviewUrl = window.__pendingStacPreview.url;
+              const { data, url } = window.__pendingStacPreview;
+              window.__pendingStacPreview = null;
+              el.setData(data, url);
+            }
+          });
+        }
       }
     }
   });
@@ -289,7 +315,7 @@ function initShell() {
 
 function updateShellChrome(pathname) {
   const query = new URLSearchParams(window.location.search);
-  const isEmbed = pathname === "/fair-preview" && query.get("embed") === "true";
+  const isEmbed = query.get("embed") === "true";
   const isLanding = pathname === "/";
   const isCatalog = isCatalogRoute(pathname);
 
@@ -298,11 +324,14 @@ function updateShellChrome(pathname) {
   const footerEl = document.getElementById("esa-footer");
   const cookieEl = document.getElementById("esa-cookie-banner");
   const dialEl = document.getElementById("suggest-changes-dial");
+  const appShell = document.getElementById("app-shell");
 
   if (menuEl) menuEl.style.display = isEmbed ? "none" : "";
   if (headerEl) headerEl.style.display = isEmbed ? "none" : "";
   if (cookieEl) cookieEl.style.display = isEmbed ? "none" : "";
   if (footerEl) footerEl.style.display = isEmbed || isLanding ? "none" : "";
+  if (appShell) appShell.classList.toggle("is-embed", isEmbed);
+  document.body.classList.toggle("is-embed", isEmbed);
 
   if (dialEl) {
     dialEl.style.display = !isEmbed && isCatalog ? "flex" : "none";
@@ -327,7 +356,13 @@ async function handleRoute() {
     return handleRoute();
   }
 
-  // 2. Catch legacy hash URLs (e.g. #/products/foo/collection.json)
+  // 2. Redirect embedded visits at root to /catalog?embed=true
+  if (appPath === "/" && url.searchParams.get("embed") === "true") {
+    window.history.replaceState({}, "", toAppFullPath("catalog" + url.search));
+    return handleRoute();
+  }
+
+  // 3. Catch legacy hash URLs (e.g. #/products/foo/collection.json)
   if (appPath === "/" && url.hash) {
     const rawHash = url.hash.replace(/^#\/?/, "");
     if (rawHash) {
@@ -337,7 +372,7 @@ async function handleRoute() {
     }
   }
 
-  // 3. Strip trailing .json
+  // 4. Strip trailing .json
   if (url.pathname.endsWith(".json")) {
     const cleanPath = toAppFullPath(appPath.replace(/\.json$/, "")) + url.search;
     window.history.replaceState({}, "", cleanPath);
@@ -345,6 +380,18 @@ async function handleRoute() {
   }
 
   updateShellChrome(appPath);
+
+  // Notify parent window if embedded in an iframe
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage(
+      {
+        type: "navigate",
+        navigate: { path: appPath },
+        path: url.pathname,
+      },
+      "*"
+    );
+  }
 
   const mainView = document.getElementById("main-view");
   if (!mainView) return;
