@@ -480,7 +480,7 @@ export class OscFairAssessment extends HTMLElement {
       return;
     }
 
-    const fairPageUrl = `${CONFIG.pathPrefix || "/"}fair`;
+    const aboutPageUrl = `${CONFIG.pathPrefix || "/"}about`;
 
     this.innerHTML = `
       <section class="fair-assessment mb-4">
@@ -490,8 +490,8 @@ export class OscFairAssessment extends HTMLElement {
             <div class="chart-container">
               <eox-chart></eox-chart>
               <a
-                href="${escapeHtml(fairPageUrl)}"
-                data-osc-link="/fair"
+                href="${escapeHtml(aboutPageUrl)}"
+                data-osc-link="/about"
                 class="fair-info-btn"
                 title="Learn more about FAIR principles"
               >

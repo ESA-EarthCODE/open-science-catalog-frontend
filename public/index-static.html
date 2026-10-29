@@ -242,13 +242,7 @@
         font-family: var(--header-font);
         color: #ffffff;
         font-size: 2.5rem;
-        margin: 0 0 10px 0;
-      }
-
-      .section-subtitle-dark {
-        color: rgba(255, 255, 255, 0.75);
-        font-size: 1.1rem;
-        margin: 0 0 40px 0;
+        margin: 0 0 35px 0;
       }
 
       /* Skeleton loader styles */
@@ -290,6 +284,21 @@
       .community-section {
         background-color: #ffffff;
         color: #003247;
+        padding: 70px 0 80px 0;
+      }
+
+      .community-section .section-heading-light {
+        margin: 0 0 45px 0;
+      }
+
+      .community-section .btn-cta.primary {
+        background-color: #003247;
+        color: #ffffff !important;
+      }
+
+      .community-section .btn-cta.primary:hover {
+        background-color: #005577;
+        color: #ffffff !important;
       }
 
       .community-grid {
@@ -308,7 +317,7 @@
         font-family: var(--header-font);
         color: var(--primary-color);
         font-size: 1.65rem;
-        margin: 0 0 15px 0;
+        margin: 0 0 20px 0;
       }
 
       .community-col p {
@@ -324,14 +333,16 @@
         flex-wrap: wrap;
       }
 
-      .link-email {
+      .link-email,
+      .link-forum {
         color: var(--secondary-color);
         text-decoration: underline;
         font-weight: bold;
         font-size: 1.05rem;
       }
 
-      .link-email:hover {
+      .link-email:hover,
+      .link-forum:hover {
         color: var(--primary-color);
       }
 
@@ -391,7 +402,7 @@
         <div class="hero-content">
           <h1 class="welcome-title">Welcome to the Open Science Catalogue</h1>
           <p class="hero-subtitle">
-            A catalogue of publicly available geoscience products, datasets and resources developed in the frame of scientific research Projects funded by ESA EO (Earth Observation).
+            A catalogue of geoscience products, datasets, software, workflows, and research resources from ESA and partner initiatives, FAIR-enhanced through EarthCODE services and openly shared in accordance with ESA Open Science principles.
           </p>
           <div class="hero-buttons">
             <a href="/catalog" target="_parent" class="btn-cta primary">
@@ -405,130 +416,10 @@
       </div>
     </section>
 
-    <!-- White Section: What products can I find here? -->
-    <section class="white-section">
-      <div class="container">
-        <h2 class="section-heading-light">What products can I find here?</h2>
-        <p class="section-lead-light">
-          The majority of pages on opensciencedata.esa.int only hold metadata for each product and project. The actual data and its documentation are maintained and accessible at the data providers, outside of esa.int, for the majority of cases. Products vary in geographical and temporal extent, production methodology, validation and quality. Please refer to the documentation of each product for details. Explore the catalogue, consisting of:
-        </p>
-
-        <esa-cards>
-          <esa-card
-            light
-            title="EO Missions"
-            description="Browse datasets and research products across Earth science."
-            action="LEARN MORE"
-            link="/eo-missions/catalog"
-          ></esa-card>
-
-          <esa-card
-            light
-            title="Experiments"
-            description="Explore ESA-funded research projects and their outputs."
-            action="LEARN MORE"
-            link="/experiments/catalog"
-          ></esa-card>
-
-          <esa-card
-            light
-            title="Products"
-            description="Discover science by domain — Atmosphere, Oceans, Land and more."
-            action="LEARN MORE"
-            link="/products/catalog"
-          ></esa-card>
-
-          <esa-card
-            light
-            title="Data Collections"
-            description="Find scientific workflows and reusable processing pipelines."
-            action="LEARN MORE"
-            link="/data-collections/catalog"
-          ></esa-card>
-
-          <esa-card
-            light
-            title="Themes"
-            description="Find scientific workflows and reusable processing pipelines."
-            action="LEARN MORE"
-            link="/themes/catalog"
-          ></esa-card>
-
-          <esa-card
-            light
-            title="Variables"
-            description="Find scientific workflows and reusable processing pipelines."
-            action="LEARN MORE"
-            link="/variables/catalog"
-          ></esa-card>
-
-          <esa-card
-            light
-            title="Projects"
-            description="Find scientific workflows and reusable processing pipelines."
-            action="LEARN MORE"
-            link="/projects/catalog"
-          ></esa-card>
-
-          <esa-card
-            light
-            title="Workflows"
-            description="Find scientific workflows and reusable processing pipelines."
-            action="LEARN MORE"
-            link="/workflows/catalog"
-          ></esa-card>
-        </esa-cards>
-      </div>
-    </section>
-
-    <!-- Dark Feature Band: Quick Guide Cards using esa-cards & esa-card -->
-    <section class="feature-section">
-      <div class="container">
-        <esa-cards>
-          <esa-card
-            light
-            tag="EXPLORE"
-            title="Browse The Catalogue"
-            description="Browse EO Missions, Experiments, Products, Projects, Data Collections, Themes, Variables and Workflows."
-            action="LEARN MORE"
-            link="/catalog"
-          ></esa-card>
-
-          <esa-card
-            light
-            tag="THEMES"
-            title="Choose A Theme"
-            description="Browse by theme to explore available products/projects in your area of interest."
-            action="LEARN MORE"
-            link="#themes-section"
-          ></esa-card>
-
-          <esa-card
-            light
-            tag="COMMUNITY"
-            title="Improve The Catalogue"
-            description="Suggest changes and/or contribute to the continuously growing number of available products."
-            action="LEARN MORE"
-            link="https://github.com/ESA-EarthCODE/open-science-catalog-metadata"
-          ></esa-card>
-
-          <esa-card
-            light
-            tag="CONTACT"
-            title="Get In Touch"
-            description="If you have any questions or feedback regarding Open Science Catalogue, please contact us."
-            action="LEARN MORE"
-            link="mailto:opensciencedata@esa.int"
-          ></esa-card>
-        </esa-cards>
-      </div>
-    </section>
-
     <!-- Dark Section: Explore by Theme -->
     <section id="themes-section" class="themes-section">
       <div class="container">
         <h2 class="section-heading-dark">Explore by theme</h2>
-        <p class="section-subtitle-dark">Choose a theme below to explore available product or projects.</p>
 
         <esa-cards id="themes-container">
           <!-- Skeleton Loaders -->
@@ -543,20 +434,20 @@
     <!-- White Section: Community Contributions -->
     <section class="community-section">
       <div class="container">
-        <h2 class="section-heading-light">The Open Science Catalogue grows through community contributions.</h2>
+        <h2 class="section-heading-light">The Open Science Catalogue grows through community contributions</h2>
         <div class="community-grid">
           
           <div class="community-col">
             <h3>Contribute</h3>
             <p>
-              To suggest changes and/or contribute to the continuously growing number of available products, you can do so directly via the STAC catalog hosted on GitHub, or use the tools and services provided by EarthCODE.
+              To suggest changes and/or contribute to the continuously growing number of available products, you can do so directly via the STAC catalog hosted on GitHub, or use the tools and services available in EarthCODE workspace.
             </p>
             <div class="community-links">
               <a href="https://github.com/ESA-EarthCODE/open-science-catalog-metadata" target="_blank" class="btn-cta primary">
-                STAC catalogue on GitHub
+                STAC Catalogue on GitHub
               </a>
-              <a href="https://earthcode.esa.int/" target="_blank" class="btn-cta primary">
-                EarthCODE
+              <a id="workspace-btn" href="https://workspace.earthcode-staging.earthcode.eox.at" target="_blank" class="btn-cta primary">
+                Workspace
               </a>
             </div>
           </div>
@@ -564,9 +455,16 @@
           <div class="community-col">
             <h3>Get in touch</h3>
             <p>
-              If you have any questions or feedback regarding Open Science Catalogue, please contact us at
-              <a href="mailto:opensciencedata@esa.int" class="link-email">opensciencedata@esa.int</a>.
+              If you have any questions or feedback regarding Open Science Catalogue, join the discussion on the
+              <a id="forum-link" href="https://discourse-earthcode.eox.at" target="_blank" class="link-forum">EarthCODE Forum</a>
+              or contact us at
+              <a href="mailto:earth-code@esa.int" class="link-email">earth-code@esa.int</a>.
             </p>
+            <div class="community-links">
+              <a id="forum-btn" href="https://discourse-earthcode.eox.at" target="_blank" class="btn-cta primary">
+                EarthCODE Forum
+              </a>
+            </div>
           </div>
 
         </div>
@@ -672,7 +570,7 @@
       await customElements.whenDefined("esa-footer");
       const footer = document.createElement("esa-footer");
       footer.setAttribute("title", "Want to get in touch?");
-      footer.setAttribute("contact-link", "mailto:opensciencedata@esa.int");
+      footer.setAttribute("contact-link", "mailto:earth-code@esa.int");
       footer.setAttribute("description", "For advice and guidance in using any material from this site, please do not hesitate to contact ESA's Branding and Partnerships Office. We are here to help.");
       footer.footerItems = footerItems;
       document.getElementById("footer-mount").appendChild(footer);
@@ -693,6 +591,27 @@
           const apiUrl =
             urlParams.get("apiUrl") ||
             "https://eoapi.workspace.earthcode.eox.at/stac";
+
+          const workspaceRoot =
+            urlParams.get("workspaceRoot") ||
+            "https://workspace.earthcode-staging.earthcode.eox.at";
+          const discourseRoot =
+            urlParams.get("discourseRoot") ||
+            "https://discourse-earthcode.eox.at";
+
+          const workspaceBtn = document.getElementById("workspace-btn");
+          if (workspaceBtn && workspaceRoot) {
+            workspaceBtn.href = workspaceRoot;
+          }
+
+          const forumBtn = document.getElementById("forum-btn");
+          const forumLink = document.getElementById("forum-link");
+          if (forumBtn && discourseRoot) {
+            forumBtn.href = discourseRoot;
+          }
+          if (forumLink && discourseRoot) {
+            forumLink.href = discourseRoot;
+          }
           
           const apiAccessBtn = document.getElementById("api-access-btn");
           const apiAccessBtn2 = document.getElementById("api-access-btn-2");

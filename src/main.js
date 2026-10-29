@@ -9,6 +9,7 @@ import {
   renderLandingPage,
   renderMetricsPage,
   renderSearchPage,
+  renderAboutPage,
   renderFairPage,
   renderFairPreviewPage,
   renderPrivacyNoticePage,
@@ -44,7 +45,7 @@ function getMenuItems() {
     { title: "Catalogue", href: toAppFullPath("catalog") },
     { title: "Metrics", href: toAppFullPath("metrics") },
     { title: "Search", href: toAppFullPath("search") },
-    { title: "FAIR Principles", href: toAppFullPath("fair") },
+    { title: "About", href: toAppFullPath("about") },
     { title: "API Access", href: apiAccessUrl },
   ];
 }
@@ -55,6 +56,7 @@ function isCatalogRoute(appRelativePath) {
     "/metrics",
     "/search",
     "/privacy-notice",
+    "/about",
     "/fair",
     "/fair-preview",
   ].includes(appRelativePath);
@@ -402,8 +404,8 @@ async function handleRoute() {
     renderMetricsPage(mainView);
   } else if (appPath === "/search") {
     renderSearchPage(mainView);
-  } else if (appPath === "/fair") {
-    renderFairPage(mainView);
+  } else if (appPath === "/about" || appPath === "/fair") {
+    renderAboutPage(mainView);
   } else if (appPath === "/fair-preview") {
     renderFairPreviewPage(mainView);
   } else if (appPath === "/privacy-notice") {

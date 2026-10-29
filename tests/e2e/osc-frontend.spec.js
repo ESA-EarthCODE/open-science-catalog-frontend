@@ -157,7 +157,7 @@ test.describe("Open Science Catalogue Frontend", () => {
       iframe.getByRole("heading", { name: "Welcome to the Open Science Catalogue" })
     ).toBeVisible();
     await expect(
-      iframe.getByText("A catalogue of publicly available geoscience products")
+      iframe.getByText("A catalogue of geoscience products, datasets, software, workflows")
     ).toBeVisible();
     await expect(
       iframe.locator(".hero-buttons a.btn-cta.primary")
@@ -166,6 +166,20 @@ test.describe("Open Science Catalogue Frontend", () => {
       iframe.locator(".hero-buttons a.btn-cta.secondary")
     ).toBeVisible();
 
+    // Verify community contributions section changes
+    await expect(
+      iframe.getByRole("heading", {
+        name: "The Open Science Catalogue grows through community contributions",
+        exact: true,
+      })
+    ).toBeVisible();
+    await expect(
+      iframe.locator("#workspace-btn")
+    ).toHaveText("Workspace");
+    await expect(
+      iframe.locator("#forum-btn")
+    ).toHaveText("EarthCODE Forum");
+
     // Verify background image is set on the hero section
     const bgImage = await iframe.locator(".hero-section").evaluate((el) => {
       return window.getComputedStyle(el).backgroundImage;
@@ -173,14 +187,26 @@ test.describe("Open Science Catalogue Frontend", () => {
     expect(bgImage).toContain("earthcode-infographic-pillars-Nologo.jpg");
   });
 
-  test("renders the FAIR Principles page at /fair and Privacy Notice at /privacy-notice", async ({
+  test("renders the About page at /about (and backwards-compatible /fair) and Privacy Notice at /privacy-notice", async ({
     page,
   }) => {
-    await page.goto("/fair");
+    await page.goto("/about");
     await expect(
-      page.getByRole("heading", { name: "The FAIR Guiding Principles" })
+      page.getByRole("heading", { name: "About the Open Science Catalogue" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "What products can I find here?" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "The FAIR Assessment Tool" })
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: /Findable/i }).first()).toBeVisible();
+
+    // Backwards-compatible /fair route
+    await page.goto("/fair");
+    await expect(
+      page.getByRole("heading", { name: "About the Open Science Catalogue" })
+    ).toBeVisible();
 
     await page.goto("/privacy-notice");
     await expect(page.locator(".esa-footer")).toBeVisible();
