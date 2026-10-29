@@ -151,6 +151,26 @@ test.describe("Open Science Catalogue Frontend", () => {
     await expect(page.locator("esa-header")).toBeAttached();
     await expect(page.locator("esa-navbar")).toBeAttached();
     await expect(page.locator("#indexIframe")).toBeVisible();
+
+    const iframe = page.frameLocator("#indexIframe");
+    await expect(
+      iframe.getByRole("heading", { name: "Welcome to the Open Science Catalogue" })
+    ).toBeVisible();
+    await expect(
+      iframe.getByText("A catalogue of publicly available geoscience products")
+    ).toBeVisible();
+    await expect(
+      iframe.locator(".hero-buttons a.btn-cta.primary")
+    ).toBeVisible();
+    await expect(
+      iframe.locator(".hero-buttons a.btn-cta.secondary")
+    ).toBeVisible();
+
+    // Verify background image is set on the hero section
+    const bgImage = await iframe.locator(".hero-section").evaluate((el) => {
+      return window.getComputedStyle(el).backgroundImage;
+    });
+    expect(bgImage).toContain("earthcode-infographic-pillars-Nologo.jpg");
   });
 
   test("renders the FAIR Principles page at /fair and Privacy Notice at /privacy-notice", async ({
