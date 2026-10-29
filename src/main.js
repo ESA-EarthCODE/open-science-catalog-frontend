@@ -332,8 +332,12 @@ function updateShellChrome(pathname) {
   if (headerEl) headerEl.style.display = isEmbed ? "none" : "";
   if (cookieEl) cookieEl.style.display = isEmbed ? "none" : "";
   if (footerEl) footerEl.style.display = isEmbed || isLanding ? "none" : "";
-  if (appShell) appShell.classList.toggle("is-embed", isEmbed);
+  if (appShell) {
+    appShell.classList.toggle("is-embed", isEmbed);
+    appShell.classList.toggle("is-landing", isLanding);
+  }
   document.body.classList.toggle("is-embed", isEmbed);
+  document.body.classList.toggle("is-landing", isLanding);
 
   if (dialEl) {
     dialEl.style.display = !isEmbed && isCatalog ? "flex" : "none";
