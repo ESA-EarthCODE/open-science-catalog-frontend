@@ -14,6 +14,7 @@ import {
   renderPrivacyNoticePage,
 } from "./pages/static-pages.js";
 import { mountOrUpdateCatalogPage } from "./pages/catalog-page.js";
+import { updateTitleForRoute } from "./utils/title.js";
 
 const appVersion = typeof APP_VERSION !== "undefined" ? APP_VERSION : "4.0.0-rc.1";
 
@@ -380,6 +381,7 @@ async function handleRoute() {
   }
 
   updateShellChrome(appPath);
+  updateTitleForRoute(appPath);
 
   // Notify parent window if embedded in an iframe
   if (window.parent && window.parent !== window) {
@@ -410,7 +412,9 @@ async function handleRoute() {
     renderPrivacyNoticePage(mainView);
   } else {
     await mountOrUpdateCatalogPage(mainView, url.pathname, (syncedPath) => {
-      updateShellChrome(toAppRelativePath(syncedPath));
+      const relSynced = toAppRelativePath(syncedPath);
+      updateShellChrome(relSynced);
+      updateTitleForRoute(relSynced);
     });
   }
 }
@@ -428,6 +432,8 @@ export function navigateTo(path) {
   window.scrollTo({ left: 0, top: 0 });
   handleRoute();
 }
+
+window.navigateTo = navigateTo;
 
 window.addEventListener("popstate", () => {
   handleRoute();
