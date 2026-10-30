@@ -408,4 +408,56 @@ test.describe("Open Science Catalogue Frontend", () => {
       page.getByText("Injected while on landing page and auto-navigated to catalog.")
     ).toBeVisible();
   });
+
+  test("updates document.title when navigating across routes and does not remain stuck", async ({
+    page,
+  }) => {
+    // 1. Root landing page
+    await page.goto("/");
+    expect(await page.title()).toBe("Open Science Catalogue");
+
+    // 2. Metrics page
+    await page.goto("/metrics");
+    expect(await page.title()).toBe("Metrics - Open Science Catalogue");
+
+    // 3. Search page
+    await page.goto("/search");
+    expect(await page.title()).toBe("Search - Open Science Catalogue");
+
+    // 4. About page
+    await page.goto("/about");
+    expect(await page.title()).toBe("About - Open Science Catalogue");
+
+    // 5. Privacy Notice page
+    await page.goto("/privacy-notice");
+    expect(await page.title()).toBe("Privacy Notice - Open Science Catalogue");
+
+    // 6. FAIR preview with custom title
+    await page.goto("/fair-preview?title=Custom%20Dataset");
+    expect(await page.title()).toBe("Custom Dataset - FAIR Assessment - Open Science Catalogue");
+
+    // 7. Catalog page updates to STAC entity title
+    await page.goto("/catalog");
+    const browserEl = page.locator("stac-browser");
+    await expect(browserEl).toBeAttached();
+    await expect(page).toHaveTitle(/Open Science Catalog/);
+
+    // 8. SPA navigation from catalog back to metrics resets title and is not stuck on catalog title
+    await page.evaluate(() => {
+      window.navigateTo("/metrics");
+    });
+    await expect(page).toHaveTitle("Metrics - Open Science Catalogue");
+
+    // 9. SPA navigation to search
+    await page.evaluate(() => {
+      window.navigateTo("/search");
+    });
+    await expect(page).toHaveTitle("Search - Open Science Catalogue");
+
+    // 10. SPA navigation back to root
+    await page.evaluate(() => {
+      window.navigateTo("/");
+    });
+    await expect(page).toHaveTitle("Open Science Catalogue");
+  });
 });

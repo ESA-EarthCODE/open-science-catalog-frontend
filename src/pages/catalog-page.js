@@ -1,5 +1,6 @@
 import CONFIG from "../merged-config.js";
 import { ensureStacBrowserLoaded } from "../stac-fields-setup.js";
+import { setPageTitle } from "../utils/title.js";
 import "../widgets/osc-product-header.js";
 import "../widgets/osc-data-access.js";
 import "../widgets/osc-fair-assessment.js";
@@ -372,7 +373,7 @@ export async function mountOrUpdateCatalogPage(container, pathname, onUrlSynced)
 
   browserEl.addEventListener("title", (event) => {
     if (event.detail) {
-      document.title = event.detail;
+      setPageTitle(event.detail);
     }
   });
 
