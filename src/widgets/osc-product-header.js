@@ -358,12 +358,6 @@ export class OscProductHeader extends HTMLElement {
         ? this._formatId(rawRegion)
         : null;
 
-    const rawStatus = this._stac["osc:status"] || this._stac.status;
-    const status =
-      typeof rawStatus === "string" && rawStatus.trim().length > 0
-        ? rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)
-        : null;
-
     const subMetaParts = [];
     if (themes.length > 0) subMetaParts.push(this._renderMetaList("Theme(s):", themes));
     if (variables.length > 0)
@@ -377,13 +371,6 @@ export class OscProductHeader extends HTMLElement {
         )}</span></span>`
       );
     }
-    if (status) {
-      subMetaParts.push(
-        `<span class="osc-meta-item"><span class="meta-label me-1">Status:</span><span class="meta-value">${escapeHtml(
-          status
-        )}</span></span>`
-      );
-    }
 
     const hasSubMeta = subMetaParts.length > 0;
     const hasHeaderMeta = Boolean(project) || hasSubMeta;
@@ -394,6 +381,18 @@ export class OscProductHeader extends HTMLElement {
     const versionLinks = this._versionLinks();
     const latestLink = this._latestLink();
     const canonicalLink = this._canonicalLink();
+    const rawDate =
+      this._stac.created ||
+      this._stac.published ||
+      this._stac.updated ||
+      this._stac.properties?.created ||
+      this._stac.properties?.published ||
+      this._stac.properties?.updated ||
+      null;
+    const releaseDate = rawDate ? String(rawDate).slice(0, 10) : null;
+    const currentVersionStr = this._version()
+      ? `version ${this._version()}`
+      : "this version";
 
     const doiPopoverBody = isCanonical
       ? `
@@ -411,8 +410,15 @@ export class OscProductHeader extends HTMLElement {
             <div class="fw-semibold small mb-1">Available versions:</div>
             <ul class="list-unstyled mb-0 d-flex flex-column gap-1">
               ${versionLinks
-                .map(
-                  (vLink) => `
+                .map((vLink) => {
+                  const vDate =
+                    vLink.created ||
+                    vLink.updated ||
+                    vLink.published ||
+                    vLink.date ||
+                    null;
+                  const dateStr = vDate ? String(vDate).slice(0, 10) : "";
+                  return `
                 <li class="d-flex align-items-center">
                   ${renderOscLink({
                     data: vLink,
@@ -421,13 +427,15 @@ export class OscProductHeader extends HTMLElement {
                     className: "stac-link small fw-semibold text-decoration-none",
                   })}
                   ${
-                    latestLink && vLink.href === latestLink.href
-                      ? `<span class="badge bg-primary-subtle text-primary ms-1 extra-small">Latest</span>`
+                    dateStr
+                      ? `<span class="text-muted ms-2 small">(${escapeHtml(
+                          dateStr
+                        )})</span>`
                       : ""
                   }
                 </li>
-              `
-                )
+              `;
+                })
                 .join("")}
             </ul>
           </div>
@@ -437,10 +445,15 @@ export class OscProductHeader extends HTMLElement {
       `
       : `
         <div class="fw-bold mb-1 text-primary">${escapeHtml(doiLabel)}</div>
-        <div class="text-secondary mb-1">
+        <div class="text-secondary mb-2">
           This DOI persistently identifies this specific, immutable version${escapeHtml(
             this._versionText()
           )} that will not change.
+        </div>
+        <div class="small text-muted mb-2">
+          You are viewing ${escapeHtml(currentVersionStr)}${
+            releaseDate ? ` (released ${escapeHtml(releaseDate)})` : ""
+          }.
         </div>
         ${
           canonicalLink
@@ -480,11 +493,11 @@ export class OscProductHeader extends HTMLElement {
             <button
               type="button"
               class="btn btn-outline-secondary btn-sm nav-btn"
-              title="Catalogue Source"
+              title="Static Catalog"
               data-popover-toggle
             >
               ${ICONS.database}
-              <span class="button-label ms-1">Catalogue Source</span>
+              <span class="button-label ms-1">Static Catalog</span>
             </button>
             <div class="osc-popover-box">
               <div class="p-1 small">
@@ -507,7 +520,7 @@ export class OscProductHeader extends HTMLElement {
           </div>
           <div class="nav-right">
             <a
-              href="https://earthcode.esa.int"
+              href="https://esa-earthcode.github.io/documentation/Technical%20Documentation/Open%20Science%20Catalog/"
               target="_blank"
               rel="noopener noreferrer"
               class="btn btn-outline-secondary btn-sm nav-btn"
@@ -522,7 +535,6 @@ export class OscProductHeader extends HTMLElement {
         <!-- Row 2: Product type badge & Action buttons -->
         <div class="action-bar d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
           <div class="product-badge d-flex align-items-center">
-            <span class="me-1 text-primary d-inline-flex">${ICONS.infoCircle}</span>
             <span class="fw-bold fs-6">${escapeHtml(oscType)}:</span>
           </div>
           <div class="action-buttons d-flex flex-wrap align-items-center gap-2">

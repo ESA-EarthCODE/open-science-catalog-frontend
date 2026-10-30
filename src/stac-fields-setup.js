@@ -83,6 +83,28 @@ export function ensureStacBrowserLoaded() {
         },
       });
 
+      Registry.addMetadataField("created", {
+        label: "Release date",
+        formatter: (value) => {
+          if (!value) return "";
+          const d = new Date(value);
+          if (isNaN(d.getTime())) return String(value);
+          const dateStr = d.toISOString().slice(0, 10);
+          return `<span title="${escapeHtml(String(value))}">${dateStr}</span>`;
+        },
+      });
+
+      Registry.addMetadataField("updated", {
+        label: "Last updated on OSC",
+        formatter: (value) => {
+          if (!value) return "";
+          const d = new Date(value);
+          if (isNaN(d.getTime())) return String(value);
+          const dateStr = d.toISOString().slice(0, 10);
+          return `<span title="${escapeHtml(String(value))}">${dateStr}</span>`;
+        },
+      });
+
       if (Registry.fields?.links?.rel?.mapping) {
         Registry.fields.links.rel.mapping.vcs = "Version Control System";
       }

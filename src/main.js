@@ -9,11 +9,13 @@ import {
   renderLandingPage,
   renderMetricsPage,
   renderSearchPage,
+  renderAboutPage,
   renderFairPage,
   renderFairPreviewPage,
   renderPrivacyNoticePage,
 } from "./pages/static-pages.js";
 import { mountOrUpdateCatalogPage } from "./pages/catalog-page.js";
+import { updateTitleForRoute } from "./utils/title.js";
 
 const appVersion = typeof APP_VERSION !== "undefined" ? APP_VERSION : "4.0.0-rc.1";
 
@@ -44,7 +46,7 @@ function getMenuItems() {
     { title: "Catalogue", href: toAppFullPath("catalog") },
     { title: "Metrics", href: toAppFullPath("metrics") },
     { title: "Search", href: toAppFullPath("search") },
-    { title: "FAIR Principles", href: toAppFullPath("fair") },
+    { title: "About", href: toAppFullPath("about") },
     { title: "API Access", href: apiAccessUrl },
   ];
 }
@@ -55,6 +57,7 @@ function isCatalogRoute(appRelativePath) {
     "/metrics",
     "/search",
     "/privacy-notice",
+    "/about",
     "/fair",
     "/fair-preview",
   ].includes(appRelativePath);
@@ -330,8 +333,12 @@ function updateShellChrome(pathname) {
   if (headerEl) headerEl.style.display = isEmbed ? "none" : "";
   if (cookieEl) cookieEl.style.display = isEmbed ? "none" : "";
   if (footerEl) footerEl.style.display = isEmbed || isLanding ? "none" : "";
-  if (appShell) appShell.classList.toggle("is-embed", isEmbed);
+  if (appShell) {
+    appShell.classList.toggle("is-embed", isEmbed);
+    appShell.classList.toggle("is-landing", isLanding);
+  }
   document.body.classList.toggle("is-embed", isEmbed);
+  document.body.classList.toggle("is-landing", isLanding);
 
   if (dialEl) {
     dialEl.style.display = !isEmbed && isCatalog ? "flex" : "none";
@@ -380,6 +387,7 @@ async function handleRoute() {
   }
 
   updateShellChrome(appPath);
+  updateTitleForRoute(appPath);
 
   // Notify parent window if embedded in an iframe
   if (window.parent && window.parent !== window) {
@@ -402,15 +410,17 @@ async function handleRoute() {
     renderMetricsPage(mainView);
   } else if (appPath === "/search") {
     renderSearchPage(mainView);
-  } else if (appPath === "/fair") {
-    renderFairPage(mainView);
+  } else if (appPath === "/about" || appPath === "/fair") {
+    renderAboutPage(mainView);
   } else if (appPath === "/fair-preview") {
     renderFairPreviewPage(mainView);
   } else if (appPath === "/privacy-notice") {
     renderPrivacyNoticePage(mainView);
   } else {
     await mountOrUpdateCatalogPage(mainView, url.pathname, (syncedPath) => {
-      updateShellChrome(toAppRelativePath(syncedPath));
+      const relSynced = toAppRelativePath(syncedPath);
+      updateShellChrome(relSynced);
+      updateTitleForRoute(relSynced);
     });
   }
 }
@@ -428,6 +438,8 @@ export function navigateTo(path) {
   window.scrollTo({ left: 0, top: 0 });
   handleRoute();
 }
+
+window.navigateTo = navigateTo;
 
 window.addEventListener("popstate", () => {
   handleRoute();

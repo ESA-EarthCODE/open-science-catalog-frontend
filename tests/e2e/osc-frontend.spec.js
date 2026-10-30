@@ -157,7 +157,7 @@ test.describe("Open Science Catalogue Frontend", () => {
       iframe.getByRole("heading", { name: "Welcome to the Open Science Catalogue" })
     ).toBeVisible();
     await expect(
-      iframe.getByText("A catalogue of publicly available geoscience products")
+      iframe.getByText("A catalogue of geoscience products, datasets, software, workflows")
     ).toBeVisible();
     await expect(
       iframe.locator(".hero-buttons a.btn-cta.primary")
@@ -166,6 +166,20 @@ test.describe("Open Science Catalogue Frontend", () => {
       iframe.locator(".hero-buttons a.btn-cta.secondary")
     ).toBeVisible();
 
+    // Verify community contributions section changes
+    await expect(
+      iframe.getByRole("heading", {
+        name: "The Open Science Catalogue grows through community contributions",
+        exact: true,
+      })
+    ).toBeVisible();
+    await expect(
+      iframe.locator("#workspace-btn")
+    ).toHaveText("Workspace");
+    await expect(
+      iframe.locator("#forum-btn")
+    ).toHaveText("EarthCODE Forum");
+
     // Verify background image is set on the hero section
     const bgImage = await iframe.locator(".hero-section").evaluate((el) => {
       return window.getComputedStyle(el).backgroundImage;
@@ -173,14 +187,26 @@ test.describe("Open Science Catalogue Frontend", () => {
     expect(bgImage).toContain("earthcode-infographic-pillars-Nologo.jpg");
   });
 
-  test("renders the FAIR Principles page at /fair and Privacy Notice at /privacy-notice", async ({
+  test("renders the About page at /about (and backwards-compatible /fair) and Privacy Notice at /privacy-notice", async ({
     page,
   }) => {
-    await page.goto("/fair");
+    await page.goto("/about");
     await expect(
-      page.getByRole("heading", { name: "The FAIR Guiding Principles" })
+      page.getByRole("heading", { name: "About the Open Science Catalogue" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "What products can I find here?" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "The FAIR Assessment Tool" })
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: /Findable/i }).first()).toBeVisible();
+
+    // Backwards-compatible /fair route
+    await page.goto("/fair");
+    await expect(
+      page.getByRole("heading", { name: "About the Open Science Catalogue" })
+    ).toBeVisible();
 
     await page.goto("/privacy-notice");
     await expect(page.locator(".esa-footer")).toBeVisible();
@@ -381,5 +407,57 @@ test.describe("Open Science Catalogue Frontend", () => {
     await expect(
       page.getByText("Injected while on landing page and auto-navigated to catalog.")
     ).toBeVisible();
+  });
+
+  test("updates document.title when navigating across routes and does not remain stuck", async ({
+    page,
+  }) => {
+    // 1. Root landing page
+    await page.goto("/");
+    expect(await page.title()).toBe("Open Science Catalogue");
+
+    // 2. Metrics page
+    await page.goto("/metrics");
+    expect(await page.title()).toBe("Metrics - Open Science Catalogue");
+
+    // 3. Search page
+    await page.goto("/search");
+    expect(await page.title()).toBe("Search - Open Science Catalogue");
+
+    // 4. About page
+    await page.goto("/about");
+    expect(await page.title()).toBe("About - Open Science Catalogue");
+
+    // 5. Privacy Notice page
+    await page.goto("/privacy-notice");
+    expect(await page.title()).toBe("Privacy Notice - Open Science Catalogue");
+
+    // 6. FAIR preview with custom title
+    await page.goto("/fair-preview?title=Custom%20Dataset");
+    expect(await page.title()).toBe("Custom Dataset - FAIR Assessment - Open Science Catalogue");
+
+    // 7. Catalog page updates to STAC entity title
+    await page.goto("/catalog");
+    const browserEl = page.locator("stac-browser");
+    await expect(browserEl).toBeAttached();
+    await expect(page).toHaveTitle(/Open Science Catalog/);
+
+    // 8. SPA navigation from catalog back to metrics resets title and is not stuck on catalog title
+    await page.evaluate(() => {
+      window.navigateTo("/metrics");
+    });
+    await expect(page).toHaveTitle("Metrics - Open Science Catalogue");
+
+    // 9. SPA navigation to search
+    await page.evaluate(() => {
+      window.navigateTo("/search");
+    });
+    await expect(page).toHaveTitle("Search - Open Science Catalogue");
+
+    // 10. SPA navigation back to root
+    await page.evaluate(() => {
+      window.navigateTo("/");
+    });
+    await expect(page).toHaveTitle("Open Science Catalogue");
   });
 });

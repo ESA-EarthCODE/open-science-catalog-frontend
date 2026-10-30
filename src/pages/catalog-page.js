@@ -1,5 +1,6 @@
 import CONFIG from "../merged-config.js";
 import { ensureStacBrowserLoaded } from "../stac-fields-setup.js";
+import { setPageTitle } from "../utils/title.js";
 import "../widgets/osc-product-header.js";
 import "../widgets/osc-data-access.js";
 import "../widgets/osc-fair-assessment.js";
@@ -38,7 +39,156 @@ function toOuterCleanPath(internalPath) {
   return prefix + clean.replace(/^\/+/, "");
 }
 
+export function formatNaturalTemporalExtent(rawText, stacData) {
+  if (!rawText) return null;
+  const m = rawText.match(
+    /(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}:\d{2}))?(?:\s*UTC)?\s*[–—-]\s*(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}:\d{2}))?(?:\s*UTC)?/
+  );
+  if (!m) return null;
+  const startStr = m[1];
+  const endStr = m[3];
+  const r = new Date(startStr + "T00:00:00Z");
+  const a = new Date(endStr + "T00:00:00Z");
+  if (isNaN(r.getTime()) || isNaN(a.getTime())) return null;
+
+  const monthNames = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  ];
+
+  let cadence = null;
+  const desc = (stacData?.description || "").toLowerCase();
+  const title = (stacData?.title || "").toLowerCase();
+  const keywords = Array.isArray(stacData?.keywords)
+    ? stacData.keywords.join(" ").toLowerCase()
+    : "";
+  const combined = `${desc} ${title} ${keywords}`;
+
+  if (stacData?.["osc:frequency"]) {
+    cadence = String(stacData["osc:frequency"]).toLowerCase();
+  } else if (/\b(monthly|monthly time step|monthly mean|1-month)\b/.test(combined)) {
+    cadence = "monthly";
+  } else if (/\b(daily|daily time step|daily mean|1-day)\b/.test(combined)) {
+    cadence = "daily";
+  } else if (/\b(annual|annually|yearly|annual resolution|annual mean)\b/.test(combined)) {
+    cadence = "annual";
+  } else if (/\b(weekly|8-day|10-day|16-day)\b/.test(combined)) {
+    cadence = "weekly";
+  } else if (/\b(hourly|3-hourly|6-hourly)\b/.test(combined)) {
+    cadence = "hourly";
+  }
+
+  const sYear = r.getUTCFullYear();
+  const sMonth = r.getUTCMonth();
+  const sDay = r.getUTCDate();
+  const eYear = a.getUTCFullYear();
+  const eMonth = a.getUTCMonth();
+  const eDay = a.getUTCDate();
+
+  let formatted = "";
+  if (cadence === "monthly") {
+    formatted = `${monthNames[sMonth]} ${sYear} – ${monthNames[eMonth]} ${eYear}, monthly`;
+  } else if (
+    cadence === "annual" ||
+    (sMonth === 0 && sDay === 1 && eMonth === 11 && (eDay === 31 || eDay === 30))
+  ) {
+    formatted = sYear === eYear ? `${sYear}` : `${sYear} – ${eYear}`;
+    if (cadence && cadence !== "annual") formatted += `, ${cadence}`;
+  } else if (sDay === 1 && (eDay >= 28 && eDay <= 31)) {
+    formatted = `${monthNames[sMonth]} ${sYear} – ${monthNames[eMonth]} ${eYear}`;
+    if (cadence) formatted += `, ${cadence}`;
+  } else {
+    formatted = `${sDay} ${monthNames[sMonth]} ${sYear} – ${eDay} ${monthNames[eMonth]} ${eYear}`;
+    if (cadence) formatted += `, ${cadence}`;
+  }
+
+  return formatted;
+}
+
 function injectShadowEnhancements(browserEl) {
+  const updateTemporalDisplays = () => {
+    if (!browserEl.shadowRoot) return;
+    const stacData =
+      browserEl._lastStacData || browserEl._instance?.store?.state?.data;
+    const valueCols = browserEl.shadowRoot.querySelectorAll(
+      ".metadata .row, .metadata tr"
+    );
+    valueCols.forEach((row) => {
+      if (row.textContent.includes("Temporal Extent")) {
+        const valEl = row.querySelector(".value span, td:last-child");
+        if (valEl && !valEl.dataset.naturalExtent) {
+          const original = valEl.textContent.trim();
+          const natural = formatNaturalTemporalExtent(original, stacData);
+          if (natural) {
+            valEl.dataset.naturalExtent = "true";
+            valEl.title = original;
+            valEl.textContent = natural;
+          }
+        }
+      }
+
+      // Also format Created and Updated dates without specific time
+      const labelEl = row.querySelector(".label, th, dt, td:first-child");
+      const titleAttr = (labelEl?.getAttribute("title") || "").toLowerCase();
+      const labelText = (labelEl?.textContent || "").trim().toLowerCase();
+      if (
+        titleAttr.includes("updated") ||
+        titleAttr.includes("created") ||
+        labelText.includes("updated") ||
+        labelText.includes("created") ||
+        labelText.includes("release date")
+      ) {
+        if (
+          (titleAttr === "updated" || labelText.includes("updated")) &&
+          labelEl &&
+          !labelEl.dataset.relabeled
+        ) {
+          labelEl.dataset.relabeled = "true";
+          labelEl.textContent = "Last updated on OSC";
+        }
+        const valEl = row.querySelector(
+          ".value > div, .value > span, .value, td:last-child, dd"
+        );
+        if (valEl && !valEl.dataset.dateOnly) {
+          const original = valEl.textContent.trim();
+          const dateMatch = original.match(
+            /(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}:\d{2}))?/
+          );
+          if (dateMatch && dateMatch[2]) {
+            valEl.dataset.dateOnly = "true";
+            valEl.title = original;
+            valEl.textContent = dateMatch[1];
+          }
+        }
+      }
+    });
+
+    // Move Items section into right panel below Data Access on product pages
+    if (browserEl.classList.contains("is-osc-product")) {
+      const meta = browserEl.shadowRoot.querySelector(".col.meta");
+      const items = browserEl.shadowRoot.querySelector(".col.items-container");
+      if (meta && items && items.parentElement !== meta) {
+        meta.appendChild(items);
+        items.style.gridColumn = "2";
+        items.style.width = "100%";
+        items.style.flex = "none";
+      }
+    }
+
+    const cardDates = browserEl.shadowRoot.querySelectorAll(".datetime small");
+    cardDates.forEach((el) => {
+      if (!el.dataset.naturalExtent) {
+        const original = el.textContent.trim();
+        const natural = formatNaturalTemporalExtent(original, null);
+        if (natural) {
+          el.dataset.naturalExtent = "true";
+          el.title = original;
+          el.textContent = natural;
+        }
+      }
+    });
+  };
+
   const attachStyles = () => {
     if (!browserEl.shadowRoot) return false;
     if (browserEl.shadowRoot.querySelector("#osc-shadow-overrides")) return true;
@@ -78,6 +228,10 @@ function injectShadowEnhancements(browserEl) {
       }
     `;
     browserEl.shadowRoot.appendChild(style);
+
+    const observer = new MutationObserver(updateTemporalDisplays);
+    observer.observe(browserEl.shadowRoot, { childList: true, subtree: true });
+    updateTemporalDisplays();
     return true;
   };
 
@@ -175,7 +329,7 @@ export async function mountOrUpdateCatalogPage(container, pathname, onUrlSynced)
   forumTopics.setAttribute("slot", "view-catalog-meta-end");
   forumTopics.className = "osc-slot-full";
 
-  browserEl.append(productHeader, dataAccess, fairAssessment, forumTopics);
+  browserEl.append(productHeader, fairAssessment, dataAccess, forumTopics);
 
   browserEl._currentInternalPath = targetInternalPath;
   let initialNavigationPending = targetInternalPath !== "/";
@@ -212,6 +366,7 @@ export async function mountOrUpdateCatalogPage(container, pathname, onUrlSynced)
   browserEl.addEventListener("data", (event) => {
     const stacData = event.detail?.data || null;
     const stacUrl = event.detail?.url || null;
+    browserEl._lastStacData = stacData;
 
     if (browserEl._isLivePreview) {
       if (stacUrl === CONFIG.catalogUrl && browserEl._livePreviewData) {
@@ -265,7 +420,7 @@ export async function mountOrUpdateCatalogPage(container, pathname, onUrlSynced)
 
   browserEl.addEventListener("title", (event) => {
     if (event.detail) {
-      document.title = event.detail;
+      setPageTitle(event.detail);
     }
   });
 

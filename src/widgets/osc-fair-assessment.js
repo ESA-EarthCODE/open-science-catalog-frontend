@@ -33,7 +33,7 @@ const FAIR_DESCRIPTIONS = {
   "fair:Interoperable_related_links":
     "I3 — The dataset has qualified links to related projects, experiments, themes, and variables.",
   "fair:Interoperable_has_documentation":
-    "I3 — The dataset has additional information such as guides, research papers and others.",
+    "I3.1 — The dataset has additional information such as guides, research papers and others.",
 
   // --- REUSABLE ---
   "fair:Reusable_rich_descriptions":
@@ -168,6 +168,7 @@ export class OscFairAssessment extends HTMLElement {
             normalizedGroup = "Interoperable";
           }
 
+          const isPassed = typeof value === "boolean" ? value : score === 1;
           chartData.push({
             group: normalizedGroup,
             groupLabel,
@@ -175,6 +176,7 @@ export class OscFairAssessment extends HTMLElement {
             metric: metricName,
             metricLabel,
             value,
+            passed: isPassed ? "true" : "false",
             score,
             description,
           });
@@ -222,6 +224,7 @@ export class OscFairAssessment extends HTMLElement {
           score = value >= 0.5 ? 1 : 0;
         }
 
+        const isPassed = typeof value === "boolean" ? value : score === 1;
         chartData.push({
           group: normalizedGroup,
           groupLabel,
@@ -229,6 +232,7 @@ export class OscFairAssessment extends HTMLElement {
           metric: key,
           metricLabel,
           value,
+          passed: isPassed ? "true" : "false",
           score,
           description,
         });
@@ -258,6 +262,7 @@ export class OscFairAssessment extends HTMLElement {
         categoryData.push({
           group: item.group,
           groupLabel: item.groupLabel,
+          shortLabel: item.group.charAt(0),
           groupOrder: item.groupOrder,
           count,
         });
@@ -293,7 +298,7 @@ export class OscFairAssessment extends HTMLElement {
             tooltip: [
               { field: "metricLabel", title: "Metric" },
               { field: "group", title: "Category" },
-              { field: "value", title: "Passed" },
+              { field: "passed", title: "Passed" },
               { field: "description", title: "Description" },
             ],
           },
@@ -309,7 +314,7 @@ export class OscFairAssessment extends HTMLElement {
         },
         {
           data: { name: "myData" },
-          mark: { type: "arc", outerRadius: 140, innerRadius: 120, stroke: "#fff" },
+          mark: { type: "arc", outerRadius: 145, innerRadius: 115, stroke: "#fff" },
           encoding: {
             theta: { field: "metric", aggregate: "count", stack: true },
             color: {
@@ -329,19 +334,15 @@ export class OscFairAssessment extends HTMLElement {
               legend: null,
             },
             order: { field: "groupOrder", type: "quantitative" },
-            tooltip: [
-              { field: "group", title: "Category" },
-              { aggregate: "count", title: "Metrics" },
-              { aggregate: "mean", field: "score", title: "Pass Rate", format: ".0%" },
-            ],
+            tooltip: null,
           },
         },
         {
           data: { name: "categoryData" },
-          mark: { type: "text", radius: 155, fill: "#003247", fontSize: 11, fontWeight: "bold" },
+          mark: { type: "text", radius: 130, fill: "#ffffff", fontSize: 18, fontWeight: "bold" },
           encoding: {
             theta: { field: "count", type: "quantitative", stack: true },
-            text: { field: "groupLabel", type: "nominal" },
+            text: { field: "shortLabel", type: "nominal" },
             order: { field: "groupOrder", type: "quantitative" },
           },
         },
@@ -480,18 +481,29 @@ export class OscFairAssessment extends HTMLElement {
       return;
     }
 
-    const fairPageUrl = `${CONFIG.pathPrefix || "/"}fair`;
+    const aboutPageUrl = `${CONFIG.pathPrefix || "/"}about`;
 
     this.innerHTML = `
       <section class="fair-assessment mb-4">
-        <h2 class="mb-3">FAIR Assessment</h2>
+        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+          <h2 class="mb-0">FAIR Assessment</h2>
+          <a
+            href="${escapeHtml(aboutPageUrl)}#fair-tool"
+            data-osc-link="/about#fair-tool"
+            class="small text-secondary fw-semibold text-decoration-none d-inline-flex align-items-center gap-1"
+            title="Learn how the FAIR score is calculated"
+          >
+            <span>How is this scored?</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/></svg>
+          </a>
+        </div>
         <div class="row align-items-start">
           <div class="col-lg-6 col-12 d-flex justify-content-center mb-4 mb-lg-0">
             <div class="chart-container">
               <eox-chart></eox-chart>
               <a
-                href="${escapeHtml(fairPageUrl)}"
-                data-osc-link="/fair"
+                href="${escapeHtml(aboutPageUrl)}"
+                data-osc-link="/about"
                 class="fair-info-btn"
                 title="Learn more about FAIR principles"
               >
