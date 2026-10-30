@@ -262,6 +262,7 @@ export class OscFairAssessment extends HTMLElement {
         categoryData.push({
           group: item.group,
           groupLabel: item.groupLabel,
+          shortLabel: item.group.charAt(0),
           groupOrder: item.groupOrder,
           count,
         });
@@ -338,10 +339,10 @@ export class OscFairAssessment extends HTMLElement {
         },
         {
           data: { name: "categoryData" },
-          mark: { type: "text", radius: 130, fill: "#ffffff", fontSize: 13, fontWeight: "bold" },
+          mark: { type: "text", radius: 130, fill: "#ffffff", fontSize: 18, fontWeight: "bold" },
           encoding: {
             theta: { field: "count", type: "quantitative", stack: true },
-            text: { field: "groupLabel", type: "nominal" },
+            text: { field: "shortLabel", type: "nominal" },
             order: { field: "groupOrder", type: "quantitative" },
           },
         },
