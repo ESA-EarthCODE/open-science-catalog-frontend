@@ -34,6 +34,32 @@ const mockRootCatalog = {
   ],
 };
 
+const mockProductsCatalog = {
+  type: "Catalog",
+  stac_version: "1.0.0",
+  id: "products",
+  title: "Products",
+  description: "Products catalog",
+  links: [
+    {
+      rel: "root",
+      href: `${CATALOG_BASE}/catalog.json`,
+      type: "application/json",
+    },
+    {
+      rel: "parent",
+      href: `${CATALOG_BASE}/catalog.json`,
+      type: "application/json",
+    },
+    {
+      rel: "child",
+      href: `${CATALOG_BASE}/products/test-ocean-product/collection.json`,
+      type: "application/json",
+      title: "Test Ocean Salinity Product",
+    },
+  ],
+};
+
 const mockProductCollection = {
   type: "Collection",
   stac_version: "1.0.0",
@@ -123,6 +149,14 @@ test.describe("Open Science Catalogue Frontend", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify(mockRootCatalog),
+      });
+    });
+
+    await page.route(`${CATALOG_BASE}/products/catalog.json`, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(mockProductsCatalog),
       });
     });
 
@@ -459,5 +493,63 @@ test.describe("Open Science Catalogue Frontend", () => {
       window.navigateTo("/");
     });
     await expect(page).toHaveTitle("Open Science Catalogue");
+  });
+
+  test("properly registers history entries when browsing inside catalog and handles back/forward buttons", async ({
+    page,
+  }) => {
+    // 1. Start on the landing page
+    await page.goto("/");
+    await expect(page.locator("#indexIframe")).toBeVisible();
+
+    // 2. Navigate to /catalog
+    await page.evaluate(() => window.navigateTo("/catalog"));
+    await expect(page).toHaveURL(/\/catalog$/);
+    const browserEl = page.locator("stac-browser");
+    await expect(browserEl).toBeAttached();
+    await expect(browserEl.getByText("Products", { exact: true })).toBeVisible({ timeout: 15000 });
+
+    // 3. Click "Products" inside STAC Browser
+    await browserEl.getByText("Products", { exact: true }).click();
+    await expect(page).toHaveURL(/\/products\/catalog$/);
+    await expect(
+      browserEl.getByText("Test Ocean Salinity Product", { exact: true })
+    ).toBeVisible({ timeout: 15000 });
+
+    // 4. Click "Test Ocean Salinity Product" inside STAC Browser
+    await browserEl.getByText("Test Ocean Salinity Product", { exact: true }).click();
+    await expect(page).toHaveURL(/\/products\/test-ocean-product\/collection$/);
+    await expect(
+      page.locator("osc-product-header").getByRole("heading", { name: "Test Ocean Salinity Product" })
+    ).toBeVisible({ timeout: 15000 });
+
+    // 5. Click browser Back: must return to /products/catalog (NOT outside the catalog!)
+    await page.goBack();
+    await expect(page).toHaveURL(/\/products\/catalog$/);
+    await expect(
+      browserEl.getByText("Test Ocean Salinity Product", { exact: true })
+    ).toBeVisible({ timeout: 15000 });
+
+    // 6. Click browser Back again: must return to /catalog
+    await page.goBack();
+    await expect(page).toHaveURL(/\/catalog$/);
+    await expect(browserEl.getByText("Products", { exact: true })).toBeVisible({ timeout: 15000 });
+
+    // 7. Click browser Back again: must return to / (landing page)
+    await page.goBack();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator("#indexIframe")).toBeVisible();
+
+    // 8. Click browser Forward: should return to /catalog
+    await page.goForward();
+    await expect(page).toHaveURL(/\/catalog$/);
+    await expect(browserEl.getByText("Products", { exact: true })).toBeVisible({ timeout: 15000 });
+
+    // 9. Click browser Forward again: should return to /products/catalog
+    await page.goForward();
+    await expect(page).toHaveURL(/\/products\/catalog$/);
+    await expect(
+      browserEl.getByText("Test Ocean Salinity Product", { exact: true })
+    ).toBeVisible({ timeout: 15000 });
   });
 });

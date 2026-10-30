@@ -242,7 +242,12 @@ function injectShadowEnhancements(browserEl) {
   }
 }
 
-export async function mountOrUpdateCatalogPage(container, pathname, onUrlSynced) {
+export async function mountOrUpdateCatalogPage(
+  container,
+  pathname,
+  onUrlSynced,
+  isPopState = false
+) {
   let browserEl = container.querySelector("stac-browser");
   const targetInternalPath = toInternalBrowserPath(pathname);
   const query = new URLSearchParams(window.location.search);
@@ -252,7 +257,10 @@ export async function mountOrUpdateCatalogPage(container, pathname, onUrlSynced)
     browserEl.style.setProperty("--sb-header-margin", isEmbed ? "0px" : "140px");
     if (browserEl._currentInternalPath !== targetInternalPath) {
       browserEl._currentInternalPath = targetInternalPath;
-      browserEl.navigate(targetInternalPath);
+      browserEl._navigatingProgrammatically = true;
+      browserEl.navigate(targetInternalPath).finally(() => {
+        browserEl._navigatingProgrammatically = false;
+      });
     }
     return;
   }
@@ -333,6 +341,7 @@ export async function mountOrUpdateCatalogPage(container, pathname, onUrlSynced)
 
   browserEl._currentInternalPath = targetInternalPath;
   let initialNavigationPending = targetInternalPath !== "/";
+  browserEl._navigatingProgrammatically = initialNavigationPending;
 
   browserEl.addEventListener("navigate", (event) => {
     const internalPath = event.detail?.path || "/";
@@ -343,8 +352,13 @@ export async function mountOrUpdateCatalogPage(container, pathname, onUrlSynced)
     const outerPath = toOuterCleanPath(internalPath);
     const currentSearch = window.location.search;
     const fullTarget = currentSearch ? `${outerPath}${currentSearch}` : outerPath;
+    const isProgrammatic = browserEl._navigatingProgrammatically || isPopState;
     if (window.location.pathname !== outerPath) {
-      window.history.replaceState({}, "", fullTarget);
+      if (isProgrammatic) {
+        window.history.replaceState({}, "", fullTarget);
+      } else {
+        window.history.pushState({}, "", fullTarget);
+      }
       if (typeof onUrlSynced === "function") {
         onUrlSynced(outerPath);
       }
@@ -454,6 +468,7 @@ export async function mountOrUpdateCatalogPage(container, pathname, onUrlSynced)
   if (targetInternalPath && targetInternalPath !== "/") {
     browserEl.navigate(targetInternalPath).finally(() => {
       initialNavigationPending = false;
+      browserEl._navigatingProgrammatically = false;
       notifyReady();
     });
   } else {

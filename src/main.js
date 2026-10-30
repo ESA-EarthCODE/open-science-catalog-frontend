@@ -417,11 +417,16 @@ async function handleRoute() {
   } else if (appPath === "/privacy-notice") {
     renderPrivacyNoticePage(mainView);
   } else {
-    await mountOrUpdateCatalogPage(mainView, url.pathname, (syncedPath) => {
-      const relSynced = toAppRelativePath(syncedPath);
-      updateShellChrome(relSynced);
-      updateTitleForRoute(relSynced);
-    });
+    await mountOrUpdateCatalogPage(
+      mainView,
+      url.pathname,
+      (syncedPath) => {
+        const relSynced = toAppRelativePath(syncedPath);
+        updateShellChrome(relSynced);
+        updateTitleForRoute(relSynced);
+      },
+      isHandlingPopState
+    );
   }
 }
 
@@ -441,8 +446,15 @@ export function navigateTo(path) {
 
 window.navigateTo = navigateTo;
 
-window.addEventListener("popstate", () => {
-  handleRoute();
+let isHandlingPopState = false;
+
+window.addEventListener("popstate", async () => {
+  isHandlingPopState = true;
+  try {
+    await handleRoute();
+  } finally {
+    isHandlingPopState = false;
+  }
 });
 
 initShell();
