@@ -324,10 +324,9 @@
           <div class="sort-control">
             <label for="sort-select"><strong>Sort by:</strong></label>
             <select id="sort-select">
+              <option value="+title" selected>Title (A-Z)</option>
               <option value="-updated">Recently updated</option>
-              <option value="+title">Title (A-Z)</option>
               <option value="-title">Title (Z-A)</option>
-              <option value="">Default</option>
             </select>
           </div>
         </div>
@@ -839,7 +838,7 @@
 
           // Sort parameter
           const sortSelect = document.getElementById("sort-select");
-          const selectedSort = sortSelect ? sortSelect.value : "-updated";
+          const selectedSort = sortSelect ? sortSelect.value : "+title";
           if (selectedSort) {
             params.set("sortby", selectedSort);
           }
