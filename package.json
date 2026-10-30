@@ -1,6 +1,6 @@
 {
   "name": "open-science-catalogue-frontend",
-  "version": "4.0.0-rc.1",
+  "version": "4.0.0-rc.2",
   "private": true,
   "type": "module",
   "description": "Pure Vanilla JS + Web Components frontend for the ESA Open Science Catalogue (OSC), embedding <stac-browser> as a Web Component.",
