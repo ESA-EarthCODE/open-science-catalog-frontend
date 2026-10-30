@@ -22,7 +22,15 @@ function toInternalBrowserPath(pathname) {
   if (rel === "/search" || rel === "/favorites" || rel === "/validation") {
     return rel;
   }
-  if (!rel.endsWith(".json")) {
+  if (rel.startsWith("/external/")) {
+    let extPart = rel.slice("/external/".length);
+    extPart = extPart
+      .replace(/^https?:\/\//i, (m) => (m.toLowerCase().startsWith("http:") ? "http:/" : ""))
+      .replace(/^https:\//i, "")
+      .replace(/^http:\//i, "http:/");
+    rel = `/external/${extPart}`;
+  }
+  if (!rel.endsWith(".json") && !rel.includes("?") && !rel.includes(".json?")) {
     rel = `${rel}.json`;
   }
   return rel;
@@ -31,12 +39,21 @@ function toInternalBrowserPath(pathname) {
 function toOuterCleanPath(internalPath) {
   const prefix = (CONFIG.pathPrefix || "/").replace(/\/?$/, "/");
   if (!internalPath) return `${prefix}catalog`;
-  const [pathname] = internalPath.split("?");
+  const [pathname, search] = internalPath.split("?");
   let clean = pathname.replace(/\.json$/, "");
   if (!clean || clean === "/" || clean === "/index" || clean === "/catalog") {
     return `${prefix}catalog`;
   }
-  return prefix + clean.replace(/^\/+/, "");
+  if (clean.startsWith("/external/")) {
+    let extPart = clean.slice("/external/".length);
+    extPart = extPart
+      .replace(/^https?:\/\//i, (m) => (m.toLowerCase().startsWith("http:") ? "http:/" : ""))
+      .replace(/^https:\//i, "")
+      .replace(/^http:\//i, "http:/");
+    clean = `/external/${extPart}`;
+  }
+  const result = prefix + clean.replace(/^\/+/, "");
+  return search ? `${result}?${search}` : result;
 }
 
 export function formatNaturalTemporalExtent(rawText, stacData) {

@@ -163,6 +163,21 @@ export default {
   },
   preprocessSTAC: (stac) => {
     if (Array.isArray(stac.links)) {
+      stac.links.forEach((l) => {
+        if (l && typeof l.href === "string") {
+          const match = l.href.match(/#\/external\/(.+)$/);
+          if (match && match[1]) {
+            try {
+              l.href = decodeURIComponent(match[1]);
+            } catch {
+              l.href = match[1];
+            }
+          }
+          if (l.href.startsWith("https://opensciencedata.esa.int/")) {
+            l.href = l.href.replace(/^https?:\/\/opensciencedata\.esa\.int\/(stac-browser\/)?/, "/");
+          }
+        }
+      });
       const rawLinks = stac.links.map((l) => ({
         rel: l.rel,
         href: l.href,

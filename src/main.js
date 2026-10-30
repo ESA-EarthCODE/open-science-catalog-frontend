@@ -319,8 +319,8 @@ function initShell() {
 function updateShellChrome(pathname) {
   const query = new URLSearchParams(window.location.search);
   const isEmbed = query.get("embed") === "true";
-  const isLanding = pathname === "/";
-  const isCatalog = isCatalogRoute(pathname);
+  const isLanding = pathname === "/" || pathname === "/about";
+  const isCatalog = isCatalogRoute(pathname) && !pathname.startsWith("/external");
 
   const menuEl = document.getElementById("esa-menu-el");
   const headerEl = document.getElementById("esa-header-wrapper");
@@ -358,7 +358,10 @@ async function handleRoute() {
 
   // 1. Redirect ?external=... to /external/...
   if (url.searchParams.has("external")) {
-    const ext = url.searchParams.get("external");
+    let ext = url.searchParams.get("external") || "";
+    ext = ext.replace(/^https?:\/\//i, (m) => (m.toLowerCase().startsWith("http:") ? "http:/" : ""));
+    ext = ext.replace(/^https:\//i, "").replace(/^http:\//i, "http:/");
+    ext = ext.replace(/\.json$/, "");
     window.history.replaceState({}, "", toAppFullPath(`external/${ext}`));
     return handleRoute();
   }
@@ -369,17 +372,38 @@ async function handleRoute() {
     return handleRoute();
   }
 
-  // 3. Catch legacy hash URLs (e.g. #/products/foo/collection.json)
-  if (appPath === "/" && url.hash) {
-    const rawHash = url.hash.replace(/^#\/?/, "");
+  // 3. Catch legacy hash URLs (e.g. #/products/foo/collection.json or #/external/...)
+  if ((appPath === "/" || appPath === "/stac-browser" || appPath === "/stac-browser/") && url.hash) {
+    let rawHash = url.hash.replace(/^#\/?/, "");
     if (rawHash) {
-      const cleanPath = rawHash.replace(/\.json$/, "");
-      window.history.replaceState({}, "", toAppFullPath(cleanPath));
+      if (rawHash.startsWith("external/")) {
+        let ext = rawHash.slice("external/".length);
+        ext = ext.replace(/^https?:\/\//i, (m) => (m.toLowerCase().startsWith("http:") ? "http:/" : ""));
+        ext = ext.replace(/^https:\//i, "").replace(/^http:\//i, "http:/");
+        ext = ext.replace(/\.json$/, "");
+        rawHash = `external/${ext}`;
+      } else {
+        rawHash = rawHash.replace(/\.json$/, "");
+      }
+      window.history.replaceState({}, "", toAppFullPath(rawHash));
       return handleRoute();
     }
   }
 
-  // 4. Strip trailing .json
+  // 4. Normalize /external/https://... in pathname if accessed directly
+  if (appPath.startsWith("/external/")) {
+    let ext = appPath.slice("/external/".length);
+    if (/^https?:\//i.test(ext)) {
+      ext = ext.replace(/^https?:\/\//i, (m) => (m.toLowerCase().startsWith("http:") ? "http:/" : ""));
+      ext = ext.replace(/^https:\//i, "").replace(/^http:\//i, "http:/");
+      ext = ext.replace(/\.json$/, "");
+      const cleanTarget = toAppFullPath(`external/${ext}`) + url.search;
+      window.history.replaceState({}, "", cleanTarget);
+      return handleRoute();
+    }
+  }
+
+  // 5. Strip trailing .json
   if (url.pathname.endsWith(".json")) {
     const cleanPath = toAppFullPath(appPath.replace(/\.json$/, "")) + url.search;
     window.history.replaceState({}, "", cleanPath);

@@ -1,4 +1,10 @@
-import { escapeHtml, renderOscLink, ICONS } from "../utils/links.js";
+import {
+  escapeHtml,
+  renderOscLink,
+  unwrapExternalStacUrl,
+  isStacCatalogueUrl,
+  ICONS,
+} from "../utils/links.js";
 
 export class OscDataAccess extends HTMLElement {
   constructor() {
@@ -188,42 +194,42 @@ export class OscDataAccess extends HTMLElement {
     if (link.title && link.title.toLowerCase() !== "access") {
       return link.title;
     }
-    const href = (link.href || "").toLowerCase();
-    if (href.includes("ipynb") || href.includes("notebook")) {
+    const rawHref = (link.href || "").toLowerCase();
+    if (rawHref.includes("ipynb") || rawHref.includes("notebook")) {
       return "Access Tutorial Notebook";
     }
-    if (href.includes("zenodo")) {
+    if (rawHref.includes("zenodo")) {
       return "Access Zenodo Repository";
     }
-    if (href.includes("stac-browser") || href.includes("collection.json")) {
+    if (isStacCatalogueUrl(link.href)) {
       return "Access External STAC Catalogue";
     }
-    if (href.includes("thredds") || href.includes("s3") || href.includes("cloudferro")) {
+    if (rawHref.includes("thredds") || rawHref.includes("s3") || rawHref.includes("cloudferro")) {
       return "Access Cloud Storage / Data Portal";
     }
     return "Access Dataset";
   }
 
   _getButtonLabel(link) {
-    const href = (link.href || "").toLowerCase();
-    if (href.includes("ipynb") || href.includes("notebook")) {
+    const rawHref = (link?.href || "").toLowerCase();
+    if (rawHref.includes("ipynb") || rawHref.includes("notebook")) {
       return "Open Notebook";
     }
-    if (href.includes("stac-browser") || href.includes("collection.json")) {
+    if (isStacCatalogueUrl(link?.href)) {
       return "Browse Catalogue";
     }
     return "Access Data";
   }
 
   _getLinkIconSvg(link) {
-    const href = (link.href || "").toLowerCase();
-    if (href.includes("ipynb") || href.includes("notebook")) {
+    const rawHref = (link?.href || "").toLowerCase();
+    if (rawHref.includes("ipynb") || rawHref.includes("notebook")) {
       return ICONS.journalCode;
     }
-    if (href.includes("stac-browser") || href.includes("collection.json")) {
+    if (isStacCatalogueUrl(link?.href)) {
       return ICONS.folder2Open;
     }
-    if (href.includes("s3") || href.includes("thredds") || href.includes("cloudferro")) {
+    if (rawHref.includes("s3") || rawHref.includes("thredds") || rawHref.includes("cloudferro")) {
       return ICONS.cloudDownload;
     }
     return ICONS.boxArrowUpRight;
@@ -231,11 +237,12 @@ export class OscDataAccess extends HTMLElement {
 
   _formatUrl(url) {
     if (!url) return "";
+    const clean = unwrapExternalStacUrl(url);
     try {
-      const u = new URL(url);
+      const u = new URL(clean);
       return u.hostname + u.pathname;
     } catch {
-      return url;
+      return clean;
     }
   }
 
@@ -294,10 +301,11 @@ export class OscDataAccess extends HTMLElement {
           }
           <div class="d-flex flex-column gap-2">
             ${accessLinks
-              .map(
-                (link) => {
-                  const isZarr = (link.href || "").toLowerCase().includes("zarr");
-                  return `
+              .map((link) => {
+                const isStacCat = isStacCatalogueUrl(link.href);
+                const displayUrl = unwrapExternalStacUrl(link.href);
+                const isZarr = (link.href || "").toLowerCase().includes("zarr");
+                return `
               <div class="access-link-card p-3 rounded border">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                   <div class="d-flex align-items-center gap-3 min-w-0">
@@ -308,24 +316,42 @@ export class OscDataAccess extends HTMLElement {
                       <div class="fw-bold text-dark text-truncate">${escapeHtml(
                         this._getLinkTitle(link)
                       )}</div>
+                      <div class="text-muted extra-small text-truncate" title="${escapeHtml(
+                        displayUrl
+                      )}">${escapeHtml(this._formatUrl(displayUrl))}</div>
                     </div>
                   </div>
+                  ${
+                    isStacCat
+                      ? renderOscLink({
+                          data: link,
+                          title: this._getLinkTitle(link),
+                          stacUrl: this._stacUrl,
+                          className:
+                            "btn btn-primary btn-sm d-inline-flex align-items-center gap-1 px-3 text-nowrap",
+                          innerHtml: `<span>${escapeHtml(
+                            this._getButtonLabel(link)
+                          )}</span><span class="ms-1 d-inline-flex">${ICONS.arrowRight}</span>`,
+                        })
+                      : `
                   <a
                     href="${escapeHtml(link.href)}"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 px-3"
+                    class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 px-3 text-nowrap"
                   >
                     <span>${escapeHtml(this._getButtonLabel(link))}</span>
                     <span class="ms-1 d-inline-flex">${ICONS.boxArrowUpRight}</span>
                   </a>
+                  `
+                  }
                 </div>
                 ${
                   isZarr
                     ? `
                   <div class="mt-2 pt-2 border-top extra-small text-muted">
                     <span class="fw-semibold">Python:</span> <code>import xarray as xr; ds = xr.open_zarr("${escapeHtml(
-                      link.href
+                      displayUrl
                     )}")</code>
                   </div>
                 `
@@ -333,8 +359,7 @@ export class OscDataAccess extends HTMLElement {
                 }
               </div>
             `;
-                }
-              )
+              })
               .join("")}
           </div>
         </div>

@@ -60,6 +60,32 @@ const mockProductsCatalog = {
   ],
 };
 
+const mockExternalCollection = {
+  type: "Collection",
+  stac_version: "1.0.0",
+  id: "4datlantic-ohc",
+  title: "Ocean Heat Content Change",
+  description: "External dataset for ocean heat content.",
+  license: "CC-BY-4.0",
+  extent: {
+    spatial: { bbox: [[-180, -90, 180, 90]] },
+    temporal: { interval: [["2020-01-01T00:00:00Z", "2024-12-31T23:59:59Z"]] },
+  },
+  links: [
+    {
+      rel: "root",
+      href: "https://s3.waw4-1.cloudferro.com/EarthCODE/Catalogs/4datlantic-ohc/collection.json",
+      type: "application/json",
+      title: "Ocean Heat Content Change",
+    },
+    {
+      rel: "self",
+      href: "https://s3.waw4-1.cloudferro.com/EarthCODE/Catalogs/4datlantic-ohc/collection.json",
+      type: "application/json",
+    },
+  ],
+};
+
 const mockProductCollection = {
   type: "Collection",
   stac_version: "1.0.0",
@@ -139,6 +165,11 @@ const mockProductCollection = {
       href: "https://zenodo.org/records/123456",
       title: "Access",
     },
+    {
+      rel: "via",
+      href: "https://opensciencedata.esa.int/stac-browser/#/external/https://s3.waw4-1.cloudferro.com/EarthCODE/Catalogs/4datlantic-ohc/collection.json",
+      title: "Access",
+    },
   ],
 };
 
@@ -167,6 +198,20 @@ test.describe("Open Science Catalogue Frontend", () => {
           status: 200,
           contentType: "application/json",
           body: JSON.stringify(mockProductCollection),
+        });
+      }
+    );
+
+    await page.route(
+      "https://s3.waw4-1.cloudferro.com/EarthCODE/Catalogs/4datlantic-ohc/collection.json",
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          headers: {
+            "access-control-allow-origin": "*",
+          },
+          body: JSON.stringify(mockExternalCollection),
         });
       }
     );
@@ -550,6 +595,60 @@ test.describe("Open Science Catalogue Frontend", () => {
     await expect(page).toHaveURL(/\/products\/catalog$/);
     await expect(
       browserEl.getByText("Test Ocean Salinity Product", { exact: true })
+    ).toBeVisible({ timeout: 15000 });
+  });
+
+  test("properly displays external STAC data and opens external catalogue links on current domain", async ({
+    page,
+  }) => {
+    // 1. Visit product page that contains an external STAC catalog access link
+    await page.goto("/products/test-ocean-product/collection");
+    const dataAccess = page.locator("osc-data-access .osc-data-access");
+    await expect(dataAccess).toBeVisible({ timeout: 15000 });
+
+    // 2. Verify external access link unwraps legacy opensciencedata stac-browser URL:
+    // Subtitle displays real data host (s3.waw4-1.cloudferro.com/...) rather than opensciencedata.esa.int/stac-browser/
+    await expect(
+      dataAccess.getByText("s3.waw4-1.cloudferro.com/EarthCODE/Catalogs/4datlantic-ohc/collection.json")
+    ).toBeVisible();
+
+    // 3. Find the "Browse Catalogue" button for this external catalog:
+    // It must use an in-app link on the current domain/origin (not target="_blank" to opensciencedata.esa.int)
+    const browseCatBtn = dataAccess.locator(
+      'a[data-osc-link*="/external/s3.waw4-1.cloudferro.com/EarthCODE/Catalogs/4datlantic-ohc/collection"]'
+    );
+    await expect(browseCatBtn).toBeVisible();
+    await expect(browseCatBtn).toHaveText(/Browse Catalogue/);
+
+    // 4. Click "Browse Catalogue": navigates on the current host to /external/...
+    await browseCatBtn.click();
+    await expect(page).toHaveURL(
+      /\/external\/s3\.waw4-1\.cloudferro\.com\/EarthCODE\/Catalogs\/4datlantic-ohc\/collection(\?.*)?$/
+    );
+
+    // 5. STAC Browser renders the external collection data properly
+    const browserEl = page.locator("stac-browser");
+    await expect(
+      browserEl.getByRole("heading", { name: "Ocean Heat Content Change" })
+    ).toBeVisible({ timeout: 15000 });
+    await expect(
+      browserEl.getByText("External dataset for ocean heat content.")
+    ).toBeVisible();
+
+    // 6. Browser Back returns to the product page on the current domain
+    await page.goBack();
+    await expect(page).toHaveURL(/\/products\/test-ocean-product\/collection$/);
+    await expect(dataAccess).toBeVisible({ timeout: 15000 });
+
+    // 7. Direct visit with protocol prefix (/external/https://...) normalizes cleanly to /external/s3...
+    await page.goto(
+      "/external/https://s3.waw4-1.cloudferro.com/EarthCODE/Catalogs/4datlantic-ohc/collection.json"
+    );
+    await expect(page).toHaveURL(
+      /\/external\/s3\.waw4-1\.cloudferro\.com\/EarthCODE\/Catalogs\/4datlantic-ohc\/collection$/
+    );
+    await expect(
+      browserEl.getByRole("heading", { name: "Ocean Heat Content Change" })
     ).toBeVisible({ timeout: 15000 });
   });
 });

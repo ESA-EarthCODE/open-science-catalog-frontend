@@ -10,16 +10,59 @@ export function escapeHtml(str) {
     .replace(/'/g, "&#39;");
 }
 
+export function unwrapExternalStacUrl(rawHref) {
+  if (!rawHref) return "";
+  let href = String(rawHref).trim();
+
+  // 1. Unwrap legacy stac-browser external hash URLs, e.g.:
+  // https://opensciencedata.esa.int/stac-browser/#/external/https://s3...
+  // or /browser/#/external/... or #/external/...
+  const externalHashMatch = href.match(/#\/external\/(.+)$/);
+  if (externalHashMatch && externalHashMatch[1]) {
+    try {
+      href = decodeURIComponent(externalHashMatch[1]);
+    } catch {
+      href = externalHashMatch[1];
+    }
+  }
+
+  // 2. Unwrap legacy opensciencedata.esa.int URLs pointing to local catalog entities, e.g.:
+  // https://opensciencedata.esa.int/products/foo/collection
+  // https://opensciencedata.esa.int/stac-browser/products/foo/collection
+  href = href.replace(/^https?:\/\/opensciencedata\.esa\.int\/(stac-browser\/)?/, "/");
+
+  return href;
+}
+
+export function isStacCatalogueUrl(rawHref) {
+  if (!rawHref) return false;
+  const href = String(rawHref).toLowerCase();
+  return (
+    href.includes("stac-browser") ||
+    href.includes("/browser/#/external/") ||
+    href.includes("#/external/") ||
+    href.includes("/external/") ||
+    href.includes("collection.json") ||
+    href.includes("catalog.json") ||
+    href.includes("opensciencedata.esa.int")
+  );
+}
+
 export function toCleanBrowserPath(rawHref, baseStacUrl) {
   const prefix = (CONFIG.pathPrefix || "/").replace(/\/?$/, "/");
   if (!rawHref) return `${prefix}catalog`;
 
-  let absUrl = rawHref;
+  const unwrapped = unwrapExternalStacUrl(rawHref);
+
+  let absUrl = unwrapped;
   try {
-    const base = baseStacUrl || CONFIG.catalogUrl || window.location.href;
-    absUrl = new URL(rawHref, base).href;
+    const base =
+      baseStacUrl ||
+      CONFIG.catalogUrl ||
+      (typeof window !== "undefined" && window.location ? window.location.href : "https://opensciencedata.esa.int");
+    absUrl = new URL(unwrapped, base).href;
   } catch {
-    absUrl = rawHref;
+    absUrl = unwrapped;
   }
 
   // Check if it points to an OSC catalog entity:
@@ -39,8 +82,16 @@ export function toCleanBrowserPath(rawHref, baseStacUrl) {
   const catalogUrl = CONFIG.catalogUrl || "";
   const catalogBaseDir = catalogUrl.replace(/\/[^/]*$/, "/");
 
-  if (rawHref.startsWith("/") && !rawHref.startsWith("//")) {
-    const rawClean = rawHref.replace(/\.json($|\?)/, "$1");
+  if (unwrapped.startsWith("/") && !unwrapped.startsWith("//")) {
+    let rawClean = unwrapped.replace(/\.json($|\?)/, "$1");
+    if (rawClean.startsWith("/external/")) {
+      let extPart = rawClean.slice("/external/".length);
+      extPart = extPart
+        .replace(/^https?:\/\//i, (m) => (m.toLowerCase().startsWith("http:") ? "http:/" : ""))
+        .replace(/^https:\//i, "")
+        .replace(/^http:\//i, "http:/");
+      rawClean = `/external/${extPart}`;
+    }
     if (!rawClean.startsWith(prefix)) {
       return prefix + rawClean.replace(/^\/+/, "");
     }
@@ -55,7 +106,12 @@ export function toCleanBrowserPath(rawHref, baseStacUrl) {
     return prefix + rel.replace(/^\/+/, "");
   }
 
-  const withoutProtocol = absUrl.replace(/^https?:\/\//i, "");
+  const cleanUrl = absUrl.replace(/\.json($|\?)/, "$1");
+  const withoutProtocol = cleanUrl
+    .replace(/^https?:\/\//i, (m) => (m.toLowerCase().startsWith("http:") ? "http:/" : ""))
+    .replace(/^https:\//i, "")
+    .replace(/^http:\//i, "http:/");
+
   return `${prefix}external/${withoutProtocol}`;
 }
 
