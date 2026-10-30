@@ -359,7 +359,7 @@ code {
   z-index: 1030;
   height: 140px;
   width: 100%;
-  background: #001923;
+  background: var(--esa-primary);
 }
 
 #main-view {
@@ -374,7 +374,7 @@ body.is-embed #main-view,
 }
 
 esa-navbar {
-  --header-background: #001923;
+  --header-background: var(--esa-primary);
 }
 
 esa-menu {
