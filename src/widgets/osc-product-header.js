@@ -480,11 +480,11 @@ export class OscProductHeader extends HTMLElement {
             <button
               type="button"
               class="btn btn-outline-secondary btn-sm nav-btn"
-              title="Catalogue Source"
+              title="Static Catalog"
               data-popover-toggle
             >
               ${ICONS.database}
-              <span class="button-label ms-1">Catalogue Source</span>
+              <span class="button-label ms-1">Static Catalog</span>
             </button>
             <div class="osc-popover-box">
               <div class="p-1 small">
@@ -507,7 +507,7 @@ export class OscProductHeader extends HTMLElement {
           </div>
           <div class="nav-right">
             <a
-              href="https://earthcode.esa.int"
+              href="https://esa-earthcode.github.io/documentation/Technical%20Documentation/Open%20Science%20Catalog/"
               target="_blank"
               rel="noopener noreferrer"
               class="btn btn-outline-secondary btn-sm nav-btn"
@@ -522,7 +522,6 @@ export class OscProductHeader extends HTMLElement {
         <!-- Row 2: Product type badge & Action buttons -->
         <div class="action-bar d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
           <div class="product-badge d-flex align-items-center">
-            <span class="me-1 text-primary d-inline-flex">${ICONS.infoCircle}</span>
             <span class="fw-bold fs-6">${escapeHtml(oscType)}:</span>
           </div>
           <div class="action-buttons d-flex flex-wrap align-items-center gap-2">
