@@ -264,20 +264,23 @@ export class OscDataAccess extends HTMLElement {
     const hasMultipleSections = activeSections > 1;
 
     const summaryParts = [];
-    if (itemsCount > 0) summaryParts.push(`${itemsCount} dataset items`);
+    if (itemsCount > 0)
+      summaryParts.push(`${itemsCount} data item${itemsCount > 1 ? "s" : ""}`);
     if (childCatalogs.length > 0) {
       summaryParts.push(
-        `${childCatalogs.length} sub-catalogue${childCatalogs.length > 1 ? "s" : ""}`
+        `${childCatalogs.length} catalog${childCatalogs.length > 1 ? "s" : ""}`
       );
     }
     if (accessLinks.length > 0) {
       summaryParts.push(
-        `${accessLinks.length} external access method${accessLinks.length > 1 ? "s" : ""}`
+        `${accessLinks.length} external access method${
+          accessLinks.length > 1 ? "s" : ""
+        }`
       );
     }
     const summaryText =
       totalCount > 0 && summaryParts.length > 0
-        ? `This product provides data access via: ${summaryParts.join(", ")}.`
+        ? `This product is available via: ${summaryParts.join(", ")}.`
         : null;
 
     const accessLinksHtml =
@@ -292,32 +295,45 @@ export class OscDataAccess extends HTMLElement {
           <div class="d-flex flex-column gap-2">
             ${accessLinks
               .map(
-                (link) => `
-              <div class="access-link-card p-3 rounded border d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <div class="d-flex align-items-center gap-3 min-w-0">
-                  <div class="icon-avatar rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center">
-                    ${this._getLinkIconSvg(link)}
+                (link) => {
+                  const isZarr = (link.href || "").toLowerCase().includes("zarr");
+                  return `
+              <div class="access-link-card p-3 rounded border">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                  <div class="d-flex align-items-center gap-3 min-w-0">
+                    <div class="icon-avatar rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center">
+                      ${this._getLinkIconSvg(link)}
+                    </div>
+                    <div class="link-info min-w-0">
+                      <div class="fw-bold text-dark text-truncate">${escapeHtml(
+                        this._getLinkTitle(link)
+                      )}</div>
+                    </div>
                   </div>
-                  <div class="link-info min-w-0">
-                    <div class="fw-bold text-dark text-truncate">${escapeHtml(
-                      this._getLinkTitle(link)
-                    )}</div>
-                    <div class="text-muted extra-small text-truncate" title="${escapeHtml(
-                      link.href
-                    )}">${escapeHtml(this._formatUrl(link.href))}</div>
-                  </div>
+                  <a
+                    href="${escapeHtml(link.href)}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 px-3"
+                  >
+                    <span>${escapeHtml(this._getButtonLabel(link))}</span>
+                    <span class="ms-1 d-inline-flex">${ICONS.boxArrowUpRight}</span>
+                  </a>
                 </div>
-                <a
-                  href="${escapeHtml(link.href)}"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 px-3"
-                >
-                  <span>${escapeHtml(this._getButtonLabel(link))}</span>
-                  <span class="ms-1 d-inline-flex">${ICONS.boxArrowUpRight}</span>
-                </a>
+                ${
+                  isZarr
+                    ? `
+                  <div class="mt-2 pt-2 border-top extra-small text-muted">
+                    <span class="fw-semibold">Python:</span> <code>import xarray as xr; ds = xr.open_zarr("${escapeHtml(
+                      link.href
+                    )}")</code>
+                  </div>
+                `
+                    : ""
+                }
               </div>
-            `
+            `;
+                }
               )
               .join("")}
           </div>
@@ -331,7 +347,7 @@ export class OscDataAccess extends HTMLElement {
         <div class="subcatalogs-section mb-3">
           ${
             hasMultipleSections
-              ? `<div class="section-subtitle fw-semibold text-secondary small text-uppercase mb-2">Sub-Catalogues &amp; Collections</div>`
+              ? `<div class="section-subtitle fw-semibold text-secondary small text-uppercase mb-2">Available Collections</div>`
               : ""
           }
           <div class="d-flex flex-column gap-2">
@@ -345,20 +361,17 @@ export class OscDataAccess extends HTMLElement {
                   </div>
                   <div class="link-info min-w-0">
                     <div class="fw-bold text-dark text-truncate">${escapeHtml(
-                      cat.title || "Sub-Catalogue"
+                      cat.title || "Collection"
                     )}</div>
-                    <div class="text-muted extra-small text-truncate" title="${escapeHtml(
-                      cat.href
-                    )}">${escapeHtml(this._formatUrl(cat.href))}</div>
                   </div>
                 </div>
                 ${renderOscLink({
                   data: cat,
-                  title: cat.title || "Browse Sub-Catalogue",
+                  title: cat.title || "Browse Collection",
                   stacUrl: this._stacUrl,
                   className:
                     "btn btn-primary btn-sm d-inline-flex align-items-center gap-1 px-3 text-nowrap",
-                  innerHtml: `<span>Browse Catalogue</span><span class="ms-1 d-inline-flex">${ICONS.arrowRight}</span>`,
+                  innerHtml: `<span>Browse Collection</span><span class="ms-1 d-inline-flex">${ICONS.arrowRight}</span>`,
                 })}
               </div>
             `
@@ -379,9 +392,13 @@ export class OscDataAccess extends HTMLElement {
                 ${ICONS.stack}
               </div>
               <div>
-                <div class="fw-bold text-dark">${itemsCount} Data Items / Granules available</div>
+                <div class="fw-bold text-dark">${itemsCount} Data Items available</div>
                 <div class="text-muted extra-small">
-                  Browse, filter, and inspect individual data items in the items panel below.
+                  Explore available data assets and view their metadata in the Items panel below.
+                </div>
+                <div class="text-muted extra-small mt-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/></svg>
+                  Items represent data assets (e.g. Zarr stores, GeoTIFFs, NetCDF files) forming the dataset.
                 </div>
               </div>
             </div>

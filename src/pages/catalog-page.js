@@ -126,7 +126,45 @@ function injectShadowEnhancements(browserEl) {
           }
         }
       }
+
+      // Also format Created and Updated dates without specific time
+      const labelEl = row.querySelector(".label, th, dt, td:first-child");
+      const labelText = (labelEl?.textContent || "").trim().toLowerCase();
+      if (
+        labelText.includes("updated") ||
+        labelText.includes("created") ||
+        labelText.includes("release date")
+      ) {
+        if (labelText.includes("updated") && labelEl && !labelEl.dataset.relabeled) {
+          labelEl.dataset.relabeled = "true";
+          labelEl.textContent = "Last updated on OSC";
+        }
+        const valEl = row.querySelector(".value span, td:last-child, dd");
+        if (valEl && !valEl.dataset.dateOnly) {
+          const original = valEl.textContent.trim();
+          const dateMatch = original.match(
+            /(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}:\d{2}))?/
+          );
+          if (dateMatch && dateMatch[2]) {
+            valEl.dataset.dateOnly = "true";
+            valEl.title = original;
+            valEl.textContent = dateMatch[1];
+          }
+        }
+      }
     });
+
+    // Move Items section into right panel below Data Access on product pages
+    if (browserEl.classList.contains("is-osc-product")) {
+      const meta = browserEl.shadowRoot.querySelector(".col.meta");
+      const items = browserEl.shadowRoot.querySelector(".col.items-container");
+      if (meta && items && items.parentElement !== meta) {
+        meta.appendChild(items);
+        items.style.gridColumn = "2";
+        items.style.width = "100%";
+        items.style.flex = "none";
+      }
+    }
 
     const cardDates = browserEl.shadowRoot.querySelectorAll(".datetime small");
     cardDates.forEach((el) => {
@@ -282,7 +320,7 @@ export async function mountOrUpdateCatalogPage(container, pathname, onUrlSynced)
   forumTopics.setAttribute("slot", "view-catalog-meta-end");
   forumTopics.className = "osc-slot-full";
 
-  browserEl.append(productHeader, dataAccess, fairAssessment, forumTopics);
+  browserEl.append(productHeader, fairAssessment, dataAccess, forumTopics);
 
   browserEl._currentInternalPath = targetInternalPath;
   let initialNavigationPending = targetInternalPath !== "/";
