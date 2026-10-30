@@ -86,7 +86,29 @@ export function run() {
         `git clone --depth=1 --branch ${STAC_BROWSER_BRANCH} ${STAC_BROWSER_REPO} "${tmpDir}"`,
         { stdio: "inherit" }
       );
-      execSync("npm install --no-audit --no-fund", { cwd: tmpDir, stdio: "inherit" });
+
+      // Workaround for npm optional dependencies issue with Rollup native bindings
+      // (npm issue #4828) and ensure optional peer dependency ol-mapbox-style is installed
+      // so Rollup can resolve it during the element build mode across various Node environments:
+      const stacPkgPath = path.join(tmpDir, "package.json");
+      if (fs.existsSync(stacPkgPath)) {
+        try {
+          const pkgData = JSON.parse(fs.readFileSync(stacPkgPath, "utf-8"));
+          if (pkgData.optionalDependencies && pkgData.optionalDependencies["ol-mapbox-style"]) {
+            pkgData.dependencies = pkgData.dependencies || {};
+            pkgData.dependencies["ol-mapbox-style"] = pkgData.optionalDependencies["ol-mapbox-style"];
+            delete pkgData.optionalDependencies["ol-mapbox-style"];
+            fs.writeFileSync(stacPkgPath, JSON.stringify(pkgData, null, 2));
+          }
+        } catch (e) {
+          console.warn("Could not promote ol-mapbox-style to dependencies in temporary clone:", e);
+        }
+      }
+
+      execSync("npm install --include=optional --include=dev --no-audit --no-fund", {
+        cwd: tmpDir,
+        stdio: "inherit",
+      });
       execSync("npm run build:npm", { cwd: tmpDir, stdio: "inherit" });
 
       fs.rmSync(targetDir, { recursive: true, force: true });
