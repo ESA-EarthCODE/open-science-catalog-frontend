@@ -381,6 +381,18 @@ export class OscProductHeader extends HTMLElement {
     const versionLinks = this._versionLinks();
     const latestLink = this._latestLink();
     const canonicalLink = this._canonicalLink();
+    const rawDate =
+      this._stac.created ||
+      this._stac.published ||
+      this._stac.updated ||
+      this._stac.properties?.created ||
+      this._stac.properties?.published ||
+      this._stac.properties?.updated ||
+      null;
+    const releaseDate = rawDate ? String(rawDate).slice(0, 10) : null;
+    const currentVersionStr = this._version()
+      ? `version ${this._version()}`
+      : "this version";
 
     const doiPopoverBody = isCanonical
       ? `
@@ -398,8 +410,15 @@ export class OscProductHeader extends HTMLElement {
             <div class="fw-semibold small mb-1">Available versions:</div>
             <ul class="list-unstyled mb-0 d-flex flex-column gap-1">
               ${versionLinks
-                .map(
-                  (vLink) => `
+                .map((vLink) => {
+                  const vDate =
+                    vLink.created ||
+                    vLink.updated ||
+                    vLink.published ||
+                    vLink.date ||
+                    null;
+                  const dateStr = vDate ? String(vDate).slice(0, 10) : "";
+                  return `
                 <li class="d-flex align-items-center">
                   ${renderOscLink({
                     data: vLink,
@@ -408,13 +427,15 @@ export class OscProductHeader extends HTMLElement {
                     className: "stac-link small fw-semibold text-decoration-none",
                   })}
                   ${
-                    latestLink && vLink.href === latestLink.href
-                      ? `<span class="badge bg-primary-subtle text-primary ms-1 extra-small">Latest</span>`
+                    dateStr
+                      ? `<span class="text-muted ms-2 small">(${escapeHtml(
+                          dateStr
+                        )})</span>`
                       : ""
                   }
                 </li>
-              `
-                )
+              `;
+                })
                 .join("")}
             </ul>
           </div>
@@ -424,10 +445,15 @@ export class OscProductHeader extends HTMLElement {
       `
       : `
         <div class="fw-bold mb-1 text-primary">${escapeHtml(doiLabel)}</div>
-        <div class="text-secondary mb-1">
+        <div class="text-secondary mb-2">
           This DOI persistently identifies this specific, immutable version${escapeHtml(
             this._versionText()
           )} that will not change.
+        </div>
+        <div class="small text-muted mb-2">
+          You are viewing ${escapeHtml(currentVersionStr)}${
+            releaseDate ? ` (released ${escapeHtml(releaseDate)})` : ""
+          }.
         </div>
         ${
           canonicalLink
