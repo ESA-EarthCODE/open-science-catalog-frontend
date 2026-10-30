@@ -135,10 +135,44 @@
         font-size: 1rem;
         margin: 0;
       }
-      #status {
+      .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         margin-bottom: 1rem;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      #status {
         color: #335e6f;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
+        font-weight: 500;
+        margin: 0;
+      }
+      .sort-control {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.88rem;
+        color: #4a5568;
+      }
+      .sort-control select {
+        padding: 6px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #003247;
+        font-size: 0.88rem;
+        cursor: pointer;
+        outline: none;
+      }
+      .sort-control select:focus {
+        border-color: #003247;
+      }
+      .card-updated {
+        font-size: 0.82rem;
+        color: #64748b;
+        margin-top: 6px;
       }
       h1 {
         font-family: "NotesESAbold", sans-serif !important;
@@ -285,7 +319,18 @@
         </eox-itemfilter>
       </div>
       <div class="main-content">
-        <div id="status"></div>
+        <div class="results-header">
+          <div id="status"></div>
+          <div class="sort-control">
+            <label for="sort-select"><strong>Sort by:</strong></label>
+            <select id="sort-select">
+              <option value="-updated">Recently updated</option>
+              <option value="+title">Title (A-Z)</option>
+              <option value="-title">Title (Z-A)</option>
+              <option value="">Default</option>
+            </select>
+          </div>
+        </div>
         <div id="results"></div>
       </div>
     </div>
@@ -460,6 +505,11 @@
               ${
                 item.dateRange
                   ? `<div class="card-date">${item.dateRange}</div>`
+                  : ""
+              }
+              ${
+                item.updated
+                  ? `<div class="card-updated"><small>Updated: ${item.updated.slice(0, 10)}</small></div>`
                   : ""
               }
             </div>
@@ -648,7 +698,7 @@
             },
             {
               key: "datetime",
-              title: "Date Range",
+              title: "Observation Date Range",
               type: "range",
               format: "date",
               min: "1958-01-01",
@@ -658,6 +708,14 @@
                 min: "1958-01-01",
                 max: today,
               },
+            },
+            {
+              key: "updated",
+              title: "Publication / Update Date",
+              type: "range",
+              format: "date",
+              min: "2020-01-01",
+              max: today,
             },
             {
               key: "geometry",
@@ -753,7 +811,7 @@
             }
           }
 
-          // Temporal Filter
+          // Temporal Filter (Observation Date Range)
           const temp = filters["datetime"]?.state;
           if (
             temp &&
@@ -762,6 +820,28 @@
           ) {
             const iso = (v) => (v ? new Date(v).toISOString() : "..");
             params.set("datetime", `${iso(temp.min)}/${iso(temp.max)}`);
+          }
+
+          // Publication / Update Date Filter
+          const updFilter = filters["updated"]?.state;
+          if (
+            updFilter &&
+            ((updFilter.min !== undefined && updFilter.min !== null) ||
+              (updFilter.max !== undefined && updFilter.max !== null))
+          ) {
+            if (updFilter.min) {
+              cql.push(`updated >= '${new Date(updFilter.min).toISOString()}'`);
+            }
+            if (updFilter.max) {
+              cql.push(`updated <= '${new Date(updFilter.max).toISOString()}'`);
+            }
+          }
+
+          // Sort parameter
+          const sortSelect = document.getElementById("sort-select");
+          const selectedSort = sortSelect ? sortSelect.value : "-updated";
+          if (selectedSort) {
+            params.set("sortby", selectedSort);
           }
 
           if (cql.length) {
@@ -808,6 +888,18 @@
             },
           };
         };
+
+        const sortSelect = document.getElementById("sort-select");
+        if (sortSelect) {
+          sortSelect.addEventListener("change", () => {
+            lastUrl = null;
+            if (typeof itemFilterEl.search === "function") {
+              itemFilterEl.search();
+            } else {
+              itemFilterEl.dispatchEvent(new CustomEvent("filter"));
+            }
+          });
+        }
 
         itemFilterEl.items = [];
         const updateInlineMode = () => {
