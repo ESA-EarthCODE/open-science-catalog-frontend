@@ -290,6 +290,17 @@ export function renderAboutPage(container) {
             <li><strong>Reusability:</strong> Standardized licenses, reproducible execution workflows, documentation guides, access examples, and adoption of cloud-native formats (Cloud-Optimized GeoTIFF, Zarr, GeoParquet).</li>
           </ul>
 
+          <h4 class="h5 mt-4 mb-2 text-primary">Scoring &amp; Weighting Algorithm</h4>
+          <p>
+            Each applicable FAIR evaluation rule is evaluated as a boolean check (score 1 for passed, 0 for failed). The overall FAIR score is computed as the equal-weighted mean percentage across all evaluated checks:
+          </p>
+          <p class="font-monospace bg-light p-2 rounded border small">
+            Overall Score = (Passed Checks / Total Evaluated Checks) &times; 100%
+          </p>
+          <p>
+            Each of the four pillars (Findable, Accessible, Interoperable, Reusable) also computes an individual category pass rate shown in the expandable category cards and donut chart segments, providing complete transparency into the contribution of each check.
+          </p>
+
           <h4 class="h5 mt-4 mb-2 text-primary">What it shows</h4>
           <p>
             The FAIR assessment component provides an intuitive, interactive visualization for researchers and data providers:
