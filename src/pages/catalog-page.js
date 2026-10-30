@@ -129,17 +129,26 @@ function injectShadowEnhancements(browserEl) {
 
       // Also format Created and Updated dates without specific time
       const labelEl = row.querySelector(".label, th, dt, td:first-child");
+      const titleAttr = (labelEl?.getAttribute("title") || "").toLowerCase();
       const labelText = (labelEl?.textContent || "").trim().toLowerCase();
       if (
+        titleAttr.includes("updated") ||
+        titleAttr.includes("created") ||
         labelText.includes("updated") ||
         labelText.includes("created") ||
         labelText.includes("release date")
       ) {
-        if (labelText.includes("updated") && labelEl && !labelEl.dataset.relabeled) {
+        if (
+          (titleAttr === "updated" || labelText.includes("updated")) &&
+          labelEl &&
+          !labelEl.dataset.relabeled
+        ) {
           labelEl.dataset.relabeled = "true";
           labelEl.textContent = "Last updated on OSC";
         }
-        const valEl = row.querySelector(".value span, td:last-child, dd");
+        const valEl = row.querySelector(
+          ".value > div, .value > span, .value, td:last-child, dd"
+        );
         if (valEl && !valEl.dataset.dateOnly) {
           const original = valEl.textContent.trim();
           const dateMatch = original.match(
