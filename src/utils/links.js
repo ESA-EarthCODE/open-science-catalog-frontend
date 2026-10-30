@@ -14,6 +14,28 @@ export function toCleanBrowserPath(rawHref, baseStacUrl) {
   const prefix = (CONFIG.pathPrefix || "/").replace(/\/?$/, "/");
   if (!rawHref) return `${prefix}catalog`;
 
+  let absUrl = rawHref;
+  try {
+    const base = baseStacUrl || CONFIG.catalogUrl || window.location.href;
+    absUrl = new URL(rawHref, base).href;
+  } catch {
+    absUrl = rawHref;
+  }
+
+  // Check if it points to an OSC catalog entity:
+  // e.g. eo-missions/alos-2/catalog.json, projects/eowetmet/collection.json, themes/land/catalog.json, etc.
+  const oscEntityMatch = absUrl.match(
+    /(?:^|\/)(eo-missions|projects|themes|variables|products|workflows|experiments)(?:\/([^?#]+))?/
+  );
+  if (oscEntityMatch) {
+    const folder = oscEntityMatch[1];
+    let rest = oscEntityMatch[2]
+      ? oscEntityMatch[2].replace(/\.json($|\?)/, "$1").replace(/[#?].*$/, "")
+      : "catalog";
+    if (rest.endsWith("/")) rest = rest.slice(0, -1);
+    return `${prefix}${folder}/${rest}`;
+  }
+
   const catalogUrl = CONFIG.catalogUrl || "";
   const catalogBaseDir = catalogUrl.replace(/\/[^/]*$/, "/");
 
@@ -23,14 +45,6 @@ export function toCleanBrowserPath(rawHref, baseStacUrl) {
       return prefix + rawClean.replace(/^\/+/, "");
     }
     return rawClean;
-  }
-
-  let absUrl = rawHref;
-  try {
-    const base = baseStacUrl || catalogUrl || window.location.href;
-    absUrl = new URL(rawHref, base).href;
-  } catch {
-    return rawHref.replace(/\.json($|\?)/, "$1");
   }
 
   if (catalogBaseDir && absUrl.startsWith(catalogBaseDir)) {
