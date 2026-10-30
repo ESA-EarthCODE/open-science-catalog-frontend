@@ -325,6 +325,7 @@
             <label for="sort-select"><strong>Sort by:</strong></label>
             <select id="sort-select">
               <option value="+title" selected>Title (A-Z)</option>
+              <option value="-created">Publication date (newest)</option>
               <option value="-updated">Recently updated</option>
               <option value="-title">Title (Z-A)</option>
             </select>
@@ -507,8 +508,14 @@
                   : ""
               }
               ${
-                item.updated
-                  ? `<div class="card-updated"><small>Updated: ${item.updated.slice(0, 10)}</small></div>`
+                item.created || item.updated
+                  ? `<div class="card-updated"><small>${
+                      item.created ? `Published: ${item.created.slice(0, 10)}` : ""
+                    }${
+                      item.updated && item.updated !== item.created
+                        ? `${item.created ? " · " : ""}Updated: ${item.updated.slice(0, 10)}`
+                        : ""
+                    }</small></div>`
                   : ""
               }
             </div>
