@@ -125,7 +125,22 @@ export default {
           fields.push(key);
         }
       });
-      fields.push("themes", "variables", "status", "missions", "region", "project");
+      if (object.properties && typeof object.properties === "object") {
+        Object.keys(object.properties).forEach((key) => {
+          if (key.startsWith("fair:") || key.startsWith("osc:")) {
+            fields.push(key);
+          }
+        });
+      }
+      fields.push(
+        "themes",
+        "variables",
+        "status",
+        "osc:status",
+        "missions",
+        "region",
+        "project"
+      );
 
       // If sci:doi has the same namespace and no citation text, ignore it from the table
       // (since it is already displayed prominently in the header)

@@ -358,12 +358,6 @@ export class OscProductHeader extends HTMLElement {
         ? this._formatId(rawRegion)
         : null;
 
-    const rawStatus = this._stac["osc:status"] || this._stac.status;
-    const status =
-      typeof rawStatus === "string" && rawStatus.trim().length > 0
-        ? rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)
-        : null;
-
     const subMetaParts = [];
     if (themes.length > 0) subMetaParts.push(this._renderMetaList("Theme(s):", themes));
     if (variables.length > 0)
@@ -374,13 +368,6 @@ export class OscProductHeader extends HTMLElement {
       subMetaParts.push(
         `<span class="osc-meta-item"><span class="meta-label me-1">Region:</span><span class="meta-value">${escapeHtml(
           region
-        )}</span></span>`
-      );
-    }
-    if (status) {
-      subMetaParts.push(
-        `<span class="osc-meta-item"><span class="meta-label me-1">Status:</span><span class="meta-value">${escapeHtml(
-          status
         )}</span></span>`
       );
     }
