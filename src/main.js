@@ -2,6 +2,16 @@ import "@eox/esa-ui/components/header.js";
 import "@eox/esa-ui/components/navbar.js";
 import "@eox/esa-ui/components/menu.js";
 
+// Prevent TypeError when custom elements render before menuItems are assigned
+const NavbarEl = customElements.get("esa-navbar");
+if (NavbarEl && !NavbarEl.prototype.menuItems) {
+  NavbarEl.prototype.menuItems = [];
+}
+const MenuEl = customElements.get("esa-menu");
+if (MenuEl && !MenuEl.prototype.menuItems) {
+  MenuEl.prototype.menuItems = [];
+}
+
 import "./styles/main.css";
 import CONFIG from "./merged-config.js";
 import { escapeHtml } from "./utils/links.js";
@@ -102,7 +112,7 @@ function initShell() {
 
       <header class="esa-header-wrapper" id="esa-header-wrapper">
         <esa-header></esa-header>
-        <esa-navbar id="esa-navbar-el" brand-title="Open Science Catalogue"></esa-navbar>
+        <esa-navbar id="esa-navbar-el" brand-title="${escapeHtml(CONFIG.catalogTitle || "EarthCODE Open Science Catalogue")}"></esa-navbar>
       </header>
 
       <main id="main-view" class="flex-grow-1 position-relative"></main>
@@ -213,6 +223,9 @@ function initShell() {
     const items = getMenuItems();
 
     if (nav) {
+      if (CONFIG.catalogTitle) {
+        nav.setAttribute("brand-title", CONFIG.catalogTitle);
+      }
       nav.menuItems = items;
       if (nav.render) nav.render();
     }
@@ -220,6 +233,31 @@ function initShell() {
       menu.menuItems = items;
       if (menu.render) menu.render();
     }
+
+    // Keep header wrapper height in sync with the real rendered height on mobile/resize
+    const updateHeaderHeight = () => {
+      const navEl = document.getElementById("esa-navbar-el");
+      const wrapperEl = document.getElementById("esa-header-wrapper");
+      if (!navEl || !wrapperEl) return;
+      const siteHeader = navEl.shadowRoot?.querySelector("#site-header");
+      const esaHeader = document.querySelector("esa-header")?.shadowRoot?.querySelector("#esa-header");
+      if (siteHeader && esaHeader) {
+        const hHeight = esaHeader.offsetHeight || (window.innerWidth < 640 ? 56 : 64);
+        const nHeight = siteHeader.offsetHeight || 76;
+        const total = hHeight + nHeight;
+        wrapperEl.style.height = `${total}px`;
+        document.documentElement.style.setProperty("--esa-header-height", `${total}px`);
+      }
+    };
+
+    updateHeaderHeight();
+
+    const siteHeaderEl = nav?.shadowRoot?.querySelector("#site-header");
+    if (siteHeaderEl && typeof ResizeObserver !== "undefined") {
+      const ro = new ResizeObserver(updateHeaderHeight);
+      ro.observe(siteHeaderEl);
+    }
+    window.addEventListener("resize", updateHeaderHeight);
 
     if (nav?.shadowRoot) {
       const menuBtn = nav.shadowRoot.querySelector("#menu-open");
@@ -319,7 +357,7 @@ function initShell() {
 function updateShellChrome(pathname) {
   const query = new URLSearchParams(window.location.search);
   const isEmbed = query.get("embed") === "true";
-  const isLanding = pathname === "/" || pathname === "/about";
+  const isLanding = pathname === "/";
   const isCatalog = isCatalogRoute(pathname) && !pathname.startsWith("/external");
 
   const menuEl = document.getElementById("esa-menu-el");
@@ -452,6 +490,17 @@ async function handleRoute() {
       isHandlingPopState
     );
   }
+
+  if (url.hash) {
+    try {
+      const targetEl = document.querySelector(url.hash);
+      if (targetEl) {
+        targetEl.scrollIntoView();
+      }
+    } catch {
+      // Ignore invalid query selector
+    }
+  }
 }
 
 export function navigateTo(path) {
@@ -461,10 +510,15 @@ export function navigateTo(path) {
       ? toAppFullPath(path)
       : path;
 
-  if (window.location.pathname + window.location.search !== fullTarget) {
+  const currentFull =
+    window.location.pathname + window.location.search + window.location.hash;
+  if (currentFull !== fullTarget) {
     window.history.pushState({}, "", fullTarget);
   }
-  window.scrollTo({ left: 0, top: 0 });
+  const targetUrl = new URL(fullTarget, window.location.origin);
+  if (!targetUrl.hash) {
+    window.scrollTo({ left: 0, top: 0 });
+  }
   handleRoute();
 }
 

@@ -345,6 +345,34 @@ test.describe("Open Science Catalogue Frontend", () => {
     await expect(page.locator(".esa-footer")).toBeVisible();
   });
 
+  test("properly handles mobile header height relations with multi-line brand title", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto("/about");
+
+    const dimensions = await page.evaluate(() => {
+      const wrapper = document.getElementById("esa-header-wrapper");
+      const mainView = document.getElementById("main-view");
+      const navEl = document.getElementById("esa-navbar-el");
+      const siteHeader = navEl?.shadowRoot?.querySelector("#site-header");
+      const esaHeader = document.querySelector("esa-header")?.shadowRoot?.querySelector("#esa-header");
+      return {
+        wrapperHeight: wrapper?.offsetHeight,
+        wrapperBottom: wrapper?.getBoundingClientRect().bottom,
+        mainViewTop: mainView?.getBoundingClientRect().top,
+        siteHeaderBottom: siteHeader?.getBoundingClientRect().bottom,
+        esaHeaderHeight: esaHeader?.offsetHeight,
+      };
+    });
+
+    // On mobile (<480px), the title wraps to 2 lines (~104px navbar + 56px esa-header = 160px)
+    expect(dimensions.wrapperHeight).toBeGreaterThanOrEqual(160);
+    // Wrapper bottom must match or exceed site-header bottom (zero overlap into mainView)
+    expect(dimensions.mainViewTop).toBeGreaterThanOrEqual(dimensions.siteHeaderBottom - 1);
+    expect(dimensions.wrapperBottom).toBeGreaterThanOrEqual(dimensions.siteHeaderBottom - 1);
+  });
+
   test("renders the standalone /fair-preview page and supports embed=true", async ({ page }) => {
     await page.goto(
       "/fair-preview?title=Preview%20Dataset&Findable_has_doi=true&Accessible_general=true&embed=true"
@@ -637,51 +665,51 @@ test.describe("Open Science Catalogue Frontend", () => {
   }) => {
     // 1. Root landing page
     await page.goto("/");
-    expect(await page.title()).toBe("Open Science Catalogue");
+    expect(await page.title()).toBe("EarthCODE Open Science Catalogue");
 
     // 2. Metrics page
     await page.goto("/metrics");
-    expect(await page.title()).toBe("Metrics - Open Science Catalogue");
+    expect(await page.title()).toBe("Metrics - EarthCODE Open Science Catalogue");
 
     // 3. Search page
     await page.goto("/search");
-    expect(await page.title()).toBe("Search - Open Science Catalogue");
+    expect(await page.title()).toBe("Search - EarthCODE Open Science Catalogue");
 
     // 4. About page
     await page.goto("/about");
-    expect(await page.title()).toBe("About - Open Science Catalogue");
+    expect(await page.title()).toBe("About - EarthCODE Open Science Catalogue");
 
     // 5. Privacy Notice page
     await page.goto("/privacy-notice");
-    expect(await page.title()).toBe("Privacy Notice - Open Science Catalogue");
+    expect(await page.title()).toBe("Privacy Notice - EarthCODE Open Science Catalogue");
 
     // 6. FAIR preview with custom title
     await page.goto("/fair-preview?title=Custom%20Dataset");
-    expect(await page.title()).toBe("Custom Dataset - FAIR Assessment - Open Science Catalogue");
+    expect(await page.title()).toBe("Custom Dataset - FAIR Assessment - EarthCODE Open Science Catalogue");
 
     // 7. Catalog page updates to STAC entity title
     await page.goto("/catalog");
     const browserEl = page.locator("stac-browser");
     await expect(browserEl).toBeAttached();
-    await expect(page).toHaveTitle(/Open Science Catalog/);
+    await expect(page).toHaveTitle(/EarthCODE Open Science Catalog|Open Science Catalog/);
 
     // 8. SPA navigation from catalog back to metrics resets title and is not stuck on catalog title
     await page.evaluate(() => {
       window.navigateTo("/metrics");
     });
-    await expect(page).toHaveTitle("Metrics - Open Science Catalogue");
+    await expect(page).toHaveTitle("Metrics - EarthCODE Open Science Catalogue");
 
     // 9. SPA navigation to search
     await page.evaluate(() => {
       window.navigateTo("/search");
     });
-    await expect(page).toHaveTitle("Search - Open Science Catalogue");
+    await expect(page).toHaveTitle("Search - EarthCODE Open Science Catalogue");
 
     // 10. SPA navigation back to root
     await page.evaluate(() => {
       window.navigateTo("/");
     });
-    await expect(page).toHaveTitle("Open Science Catalogue");
+    await expect(page).toHaveTitle("EarthCODE Open Science Catalogue");
   });
 
   test("properly registers history entries when browsing inside catalog and handles back/forward buttons", async ({

@@ -24,7 +24,7 @@ export function renderLandingPage(container) {
       <iframe
         id="indexIframe"
         src="${escapeHtml(src)}"
-        title="Open Science Catalogue"
+        title="${escapeHtml(CONFIG.catalogTitle || "EarthCODE Open Science Catalogue")}"
         width="100%"
         height="100%"
         style="border: none; width: 100%; height: 100%; display: block;"

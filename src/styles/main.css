@@ -3,6 +3,7 @@
   --esa-primary-light: #004d66;
   --esa-border-color: #335e6f;
   --esa-text-light: #ffffff;
+  --esa-header-height: 140px;
   --esa-shell-offset: 177px;
 
   --bs-primary: #003247;
@@ -361,12 +362,30 @@ code {
 
 /* ESA Header, Footer, Cookie Banner, Suggest Changes Dial */
 .esa-header-wrapper {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 1030;
-  height: 140px;
+  height: var(--esa-header-height, 140px);
   width: 100%;
   background: var(--esa-primary);
+  flex-shrink: 0;
+}
+
+@media (max-width: 479px) {
+  :root {
+    --esa-header-height: 168px;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 639px) {
+  :root {
+    --esa-header-height: 132px;
+  }
+}
+
+@media (max-width: 639px) {
+  esa-navbar {
+    --header-transform: translateY(56px);
+  }
 }
 
 #main-view {
@@ -591,7 +610,7 @@ esa-menu {
 
 .landing-iframe-wrapper {
   width: 100%;
-  height: calc(100vh - 140px);
+  height: calc(100vh - var(--esa-header-height, 140px));
   overflow: hidden;
 }
 

@@ -61,7 +61,7 @@ function resolveVersionTitle(link, allLinks, genericTitles) {
 
 export default {
   catalogUrl: "https://esa-earthcode.github.io/open-science-catalog-metadata-staging/catalog.json",
-  catalogTitle: "Open Science Catalogue",
+  catalogTitle: "EarthCODE Open Science Catalogue",
   catalogTitleAfterImage: null,
   catalogImage: null,
   apiUrl: "https://eoapi.workspace.earthcode.eox.at/stac",

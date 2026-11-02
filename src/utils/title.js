@@ -51,7 +51,7 @@ export function setPageTitle(title) {
 }
 
 export function updateTitleForRoute(appPath) {
-  const baseTitle = CONFIG.catalogTitle || "Open Science Catalogue";
+  const baseTitle = CONFIG.catalogTitle || "EarthCODE Open Science Catalogue";
   const query = new URLSearchParams(window.location.search);
 
   if (!appPath || appPath === "/") {

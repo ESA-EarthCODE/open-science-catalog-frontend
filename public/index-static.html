@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="./" id="stac-browser-base" />
-    <title>ESA Open Science Catalogue</title>
+    <title>EarthCODE Open Science Catalogue</title>
     <link rel="stylesheet" href="css/materialdesignicons.min.css" />
     <!-- ESA Custom Fonts -->
     <link rel="stylesheet" href="css/notesesabold.css" />
@@ -66,11 +66,12 @@
         position: relative;
         background-color: #062a38;
         background-image:
-          linear-gradient(90deg, #04212d 0%, #062a38 35%, rgba(6, 42, 56, 0.88) 55%, rgba(6, 42, 56, 0.45) 75%, rgba(6, 42, 56, 0.15) 100%),
-          url('img/earthcode-infographic-pillars-Nologo.jpg');
-        background-repeat: no-repeat, no-repeat;
-        background-size: 100% 100%, 2000px auto;
-        background-position: 0 0, right -620px bottom -280px;
+          linear-gradient(180deg, transparent 0%, transparent 70%, #062a38 95%, #062a38 100%),
+          linear-gradient(90deg, #04212d 0%, #062a38 48%, rgba(6, 42, 56, 0.85) 62%, rgba(6, 42, 56, 0.25) 85%, transparent 100%),
+          url('img/EarthCODE_EO_science_cataloque-V3.jpg');
+        background-repeat: no-repeat, no-repeat, no-repeat;
+        background-size: 100% 100%, 100% 100%, cover;
+        background-position: 0 0, 0 0, right center;
         text-align: left;
         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         padding: 90px 0 110px 0;
@@ -79,15 +80,18 @@
 
       @media (min-width: 1440px) {
         .hero-section {
-          background-size: 100% 100%, 2200px auto;
-          background-position: 0 0, right -520px bottom -260px;
+          background-position: 0 0, 0 0, right center;
           padding: 100px 0 130px 0;
         }
       }
 
       @media (max-width: 960px) {
         .hero-section {
-          background-position: 0 0, right -750px bottom -200px;
+          background-image:
+            linear-gradient(180deg, transparent 0%, transparent 70%, #062a38 95%, #062a38 100%),
+            linear-gradient(90deg, #04212d 0%, #062a38 60%, rgba(6, 42, 56, 0.85) 75%, rgba(6, 42, 56, 0.3) 90%, transparent 100%),
+            url('img/EarthCODE_EO_science_cataloque-V3.jpg');
+          background-position: 0 0, 0 0, right center;
           padding: 70px 0 90px 0;
         }
       }
@@ -95,9 +99,9 @@
       @media (max-width: 640px) {
         .hero-section {
           background-image:
-            linear-gradient(180deg, rgba(6, 42, 56, 0.92) 0%, rgba(6, 42, 56, 0.85) 100%),
-            url('img/earthcode-infographic-pillars-Nologo.jpg');
-          background-position: 0 0, center bottom;
+            linear-gradient(180deg, rgba(6, 42, 56, 0.94) 0%, rgba(6, 42, 56, 0.88) 100%),
+            url('img/EarthCODE_EO_science_cataloque-V3.jpg');
+          background-position: 0 0, center center;
           background-size: 100% 100%, cover;
           padding: 50px 0 60px 0;
         }
@@ -117,12 +121,7 @@
         line-height: 1.15;
         font-weight: bold;
         letter-spacing: -0.01em;
-      }
-
-      @media (min-width: 1100px) {
-        h1.welcome-title {
-          white-space: nowrap;
-        }
+        text-wrap: balance;
       }
 
       .hero-subtitle {
@@ -400,7 +399,7 @@
     <section class="hero-section">
       <div class="container">
         <div class="hero-content">
-          <h1 class="welcome-title">Welcome to the Open Science Catalogue</h1>
+          <h1 class="welcome-title">EarthCODE Open Science Catalogue</h1>
           <p class="hero-subtitle">
             A catalogue of geoscience products, datasets, software, workflows, and research resources from ESA and partner initiatives, FAIR-enhanced through EarthCODE services and openly shared in accordance with ESA Open Science principles.
           </p>
