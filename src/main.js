@@ -49,6 +49,17 @@ export function toAppFullPath(relativePath) {
   return prefix + cleanRel;
 }
 
+export function closeMobileMenu() {
+  const menuEl = document.getElementById("esa-menu-el") || document.querySelector("esa-menu");
+  const cMenu = menuEl?.shadowRoot?.querySelector(".c-menu");
+  if (cMenu) {
+    cMenu.classList.remove("is-open");
+  }
+  document.body.classList.remove("is-locked");
+}
+
+window.closeMobileMenu = closeMobileMenu;
+
 function getMenuItems() {
   const apiUrl = CONFIG.apiUrl || "https://eoapi.workspace.earthcode.eox.at/stac";
   const apiAccessUrl = apiUrl.replace(/\/$/, "") + "/api.html";
@@ -276,11 +287,7 @@ function initShell() {
       const closeBtn = menu.shadowRoot.querySelector("#menu-close");
       if (closeBtn) {
         closeBtn.onclick = () => {
-          const cMenu = menu.shadowRoot.querySelector(".c-menu");
-          if (cMenu) {
-            cMenu.classList.remove("is-open");
-            document.body.classList.remove("is-locked");
-          }
+          closeMobileMenu();
         };
       }
     }
@@ -289,10 +296,27 @@ function initShell() {
       if (el?.shadowRoot && !el._routingAttached) {
         el._routingAttached = true;
         el.shadowRoot.addEventListener("click", (event) => {
+          const closeTarget = event
+            .composedPath()
+            .find(
+              (target) =>
+                target.id === "menu-close" ||
+                (target.classList && target.classList.contains("c-menu__close"))
+            );
+          if (closeTarget) {
+            closeMobileMenu();
+            return;
+          }
+
           const anchor = event
             .composedPath()
             .find((target) => target.tagName === "A");
           if (!anchor) return;
+
+          if (el === menu) {
+            closeMobileMenu();
+          }
+
           const href = anchor.getAttribute("href");
           if (!href) return;
           if (href.startsWith("http") || anchor.getAttribute("target") === "_blank") {
@@ -388,6 +412,21 @@ function updateShellChrome(pathname) {
       if (githubLink) githubLink.setAttribute("href", githubUrl);
     }
   }
+
+  const currentPath = toAppFullPath(pathname);
+  [menuEl, document.getElementById("esa-navbar-el")].forEach((el) => {
+    if (!el?.shadowRoot) return;
+    el.shadowRoot.querySelectorAll("li.menu-item").forEach((li) => {
+      const a = li.querySelector("a");
+      if (!a) return;
+      const href = a.getAttribute("href");
+      if (!href) return;
+      const isCurrent =
+        href === currentPath ||
+        (href !== "/" && href !== toAppFullPath("") && currentPath.startsWith(href));
+      li.classList.toggle("current-menu-item", !!isCurrent);
+    });
+  });
 }
 
 async function handleRoute() {
@@ -504,6 +543,7 @@ async function handleRoute() {
 }
 
 export function navigateTo(path) {
+  closeMobileMenu();
   const fullTarget = path.startsWith("http")
     ? path
     : path.startsWith("/") && !path.startsWith(getAppPrefix())
@@ -527,6 +567,7 @@ window.navigateTo = navigateTo;
 let isHandlingPopState = false;
 
 window.addEventListener("popstate", async () => {
+  closeMobileMenu();
   isHandlingPopState = true;
   try {
     await handleRoute();

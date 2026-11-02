@@ -373,6 +373,74 @@ test.describe("Open Science Catalogue Frontend", () => {
     expect(dimensions.wrapperBottom).toBeGreaterThanOrEqual(dimensions.siteHeaderBottom - 1);
   });
 
+  test("opens mobile menu overlay and automatically closes it when a nav link is clicked", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto("/about");
+
+    const menuOpenBtn = page.locator("esa-navbar #menu-open");
+    const menuOverlay = page.locator("esa-menu .c-menu");
+    const closeBtn = page.locator("esa-menu #menu-close");
+
+    await expect(menuOverlay).not.toHaveClass(/is-open/);
+    await expect(page.locator("body")).not.toHaveClass(/is-locked/);
+
+    // Open mobile menu
+    await menuOpenBtn.click();
+    await expect(menuOverlay).toHaveClass(/is-open/);
+    await expect(page.locator("body")).toHaveClass(/is-locked/);
+
+    // Close using close button
+    await closeBtn.click();
+    await expect(menuOverlay).not.toHaveClass(/is-open/);
+    await expect(page.locator("body")).not.toHaveClass(/is-locked/);
+
+    // Open mobile menu again
+    await menuOpenBtn.click();
+    await expect(menuOverlay).toHaveClass(/is-open/);
+    await expect(page.locator("body")).toHaveClass(/is-locked/);
+
+    // Click a nav link inside the mobile menu (e.g. Search)
+    const searchLink = page.locator("esa-menu a.c-nav-link", { hasText: "Search" });
+    await searchLink.click();
+
+    // Verify page navigated to /search
+    await expect(page).toHaveURL(/\/search$/);
+    await expect(page.locator("#searchIframe")).toBeVisible();
+
+    // Verify mobile menu overlay is automatically closed and body is unlocked
+    await expect(menuOverlay).not.toHaveClass(/is-open/);
+    await expect(page.locator("body")).not.toHaveClass(/is-locked/);
+
+    // Open mobile menu from /search and click About
+    await menuOpenBtn.click();
+    await expect(menuOverlay).toHaveClass(/is-open/);
+    await expect(page.locator("body")).toHaveClass(/is-locked/);
+
+    const aboutLink = page.locator("esa-menu a.c-nav-link", { hasText: "About" });
+    await aboutLink.click();
+
+    await expect(page).toHaveURL(/\/about$/);
+    await expect(page.getByRole("heading", { name: "About the Open Science Catalogue" })).toBeVisible();
+    await expect(menuOverlay).not.toHaveClass(/is-open/);
+    await expect(page.locator("body")).not.toHaveClass(/is-locked/);
+
+    // Open mobile menu and click external link (API Access), verify menu closes and unlocks body
+    await menuOpenBtn.click();
+    await expect(menuOverlay).toHaveClass(/is-open/);
+    await expect(page.locator("body")).toHaveClass(/is-locked/);
+
+    const [newPage] = await Promise.all([
+      page.context().waitForEvent("page"),
+      page.locator("esa-menu a.c-nav-link", { hasText: "API Access" }).click(),
+    ]);
+    await newPage.close();
+
+    await expect(menuOverlay).not.toHaveClass(/is-open/);
+    await expect(page.locator("body")).not.toHaveClass(/is-locked/);
+  });
+
   test("renders the standalone /fair-preview page and supports embed=true", async ({ page }) => {
     await page.goto(
       "/fair-preview?title=Preview%20Dataset&Findable_has_doi=true&Accessible_general=true&embed=true"
