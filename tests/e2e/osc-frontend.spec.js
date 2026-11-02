@@ -386,6 +386,28 @@ test.describe("Open Science Catalogue Frontend", () => {
     await expect(header.locator(".doi-type-badge").getByText("Canonical DOI")).toBeVisible();
     await expect(header.getByText("10.83395/test-canonical-doi")).toBeVisible();
 
+    // 1b. Verify Static Catalog and STAC source dropdowns are harmonized with clickable links
+    const staticCatalogBtn = header.locator('button[title="Static Catalog"]');
+    await staticCatalogBtn.click();
+    const staticCatalogBox = header.locator('.nav-center .osc-popover-box');
+    await expect(staticCatalogBox).toBeVisible();
+    await expect(staticCatalogBox.getByText("Open Science Catalogue")).toBeVisible();
+    const staticCatalogLink = staticCatalogBox.locator('a[target="_blank"]');
+    await expect(staticCatalogLink).toBeVisible();
+    await expect(staticCatalogLink).toHaveAttribute(
+      "href",
+      "https://esa-earthcode.github.io/open-science-catalog-metadata-staging/catalog.json"
+    );
+    await expect(staticCatalogBox.getByText("Open Root JSON")).toHaveCount(0);
+
+    const stacSourceBtn = header.locator('button[title="Details about the STAC source"]');
+    await stacSourceBtn.click();
+    const stacSourceBox = header.locator('.action-buttons .osc-popover-box');
+    await expect(stacSourceBox).toBeVisible();
+    const stacSourceLink = stacSourceBox.locator('a[target="_blank"]');
+    await expect(stacSourceLink).toBeVisible();
+    await expect(stacSourceLink).toHaveAttribute("href", /test-ocean-product\/collection\.json/);
+
     // 2. Default STAC Browser internal header is hidden via ::part(header)
     const internalHeaderDisplay = await browserEl.evaluate((el) => {
       const h = el.shadowRoot?.querySelector('[part~="header"]');

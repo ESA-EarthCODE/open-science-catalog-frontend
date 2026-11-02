@@ -592,17 +592,20 @@ export class OscProductHeader extends HTMLElement {
                 <div class="fw-bold mb-1">${escapeHtml(
                   CONFIG.catalogTitle || "Open Science Catalogue"
                 )}</div>
-                <div class="text-muted text-break mb-2">${escapeHtml(
-                  CONFIG.catalogUrl || ""
-                )}</div>
-                <a
-                  href="${escapeHtml(CONFIG.catalogUrl || "")}"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="btn btn-sm btn-outline-primary"
-                >
-                  Open Root JSON
-                </a>
+                ${
+                  CONFIG.catalogUrl
+                    ? `
+                  <div class="mb-1 text-break">
+                    <strong>URL:</strong>
+                    <a
+                      href="${escapeHtml(CONFIG.catalogUrl)}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >${escapeHtml(CONFIG.catalogUrl)}</a>
+                  </div>
+                `
+                    : ""
+                }
               </div>
             </div>
           </div>
