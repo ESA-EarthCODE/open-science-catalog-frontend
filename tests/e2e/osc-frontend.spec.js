@@ -863,7 +863,7 @@ test.describe("Open Science Catalogue Frontend", () => {
     // 4. Click "Browse Catalogue": navigates on the current host to /external/...
     await browseCatBtn.click();
     await expect(page).toHaveURL(
-      /\/external\/s3\.waw4-1\.cloudferro\.com\/EarthCODE\/Catalogs\/4datlantic-ohc\/collection(\?.*)?$/
+      /\/external\/s3\.waw4-1\.cloudferro\.com\/EarthCODE\/Catalogs\/4datlantic-ohc\/collection$/
     );
 
     // 5. STAC Browser renders the external collection data properly
@@ -884,11 +884,11 @@ test.describe("Open Science Catalogue Frontend", () => {
     await page.goto(
       "/external/https://s3.waw4-1.cloudferro.com/EarthCODE/Catalogs/4datlantic-ohc/collection.json"
     );
-    await expect(page).toHaveURL(
-      /\/external\/s3\.waw4-1\.cloudferro\.com\/EarthCODE\/Catalogs\/4datlantic-ohc\/collection$/
-    );
     await expect(
       browserEl.getByRole("heading", { name: "Ocean Heat Content Change" })
     ).toBeVisible({ timeout: 15000 });
+    await expect(page).toHaveURL(
+      /\/external\/s3\.waw4-1\.cloudferro\.com\/EarthCODE\/Catalogs\/4datlantic-ohc\/collection$/
+    );
   });
 });

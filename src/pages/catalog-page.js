@@ -39,7 +39,7 @@ function toInternalBrowserPath(pathname) {
 function toOuterCleanPath(internalPath) {
   const prefix = (CONFIG.pathPrefix || "/").replace(/\/?$/, "/");
   if (!internalPath) return `${prefix}catalog`;
-  const [pathname, search] = internalPath.split("?");
+  const [pathname] = internalPath.split("?");
   let clean = pathname.replace(/\.json$/, "");
   if (!clean || clean === "/" || clean === "/index" || clean === "/catalog") {
     return `${prefix}catalog`;
@@ -52,8 +52,7 @@ function toOuterCleanPath(internalPath) {
       .replace(/^http:\//i, "http:/");
     clean = `/external/${extPart}`;
   }
-  const result = prefix + clean.replace(/^\/+/, "");
-  return search ? `${result}?${search}` : result;
+  return prefix + clean.replace(/^\/+/, "");
 }
 
 export function formatNaturalTemporalExtent(rawText, stacData) {
