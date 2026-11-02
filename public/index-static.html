@@ -70,8 +70,10 @@
           linear-gradient(90deg, #04212d 0%, #062a38 48%, rgba(6, 42, 56, 0.85) 62%, rgba(6, 42, 56, 0.25) 85%, transparent 100%),
           url('img/EarthCODE_EO_science_cataloque-V3.jpg');
         background-repeat: no-repeat, no-repeat, no-repeat;
-        background-size: 100% 100%, 100% 100%, cover;
+        background-size: 100% calc(100% + 2px), 100% calc(100% + 2px), cover;
         background-position: 0 0, 0 0, right center;
+        background-origin: border-box;
+        background-clip: border-box;
         text-align: left;
         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         padding: 90px 0 110px 0;
@@ -102,7 +104,7 @@
             linear-gradient(180deg, rgba(6, 42, 56, 0.94) 0%, rgba(6, 42, 56, 0.88) 100%),
             url('img/EarthCODE_EO_science_cataloque-V3.jpg');
           background-position: 0 0, center center;
-          background-size: 100% 100%, cover;
+          background-size: 100% calc(100% + 2px), cover;
           padding: 50px 0 60px 0;
         }
       }
