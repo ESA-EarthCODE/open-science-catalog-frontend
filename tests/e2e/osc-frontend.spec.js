@@ -161,6 +161,12 @@ const mockProductCollection = {
       title: "Latest version",
     },
     {
+      rel: "version-history",
+      href: "https://api.test.datacite.org/dois/application/vnd.datacite.datacite+json/10.83395/test-canonical-doi",
+      type: "application/vnd.datacite.datacite+json",
+      title: "Version History (DataCite JSON)",
+    },
+    {
       rel: "via",
       href: "https://zenodo.org/records/123456",
       title: "Access",
@@ -169,6 +175,43 @@ const mockProductCollection = {
       rel: "via",
       href: "https://opensciencedata.esa.int/stac-browser/#/external/https://s3.waw4-1.cloudferro.com/EarthCODE/Catalogs/4datlantic-ohc/collection.json",
       title: "Access",
+    },
+  ],
+};
+
+const mockVersionedProductCollection = {
+  type: "Collection",
+  stac_version: "1.0.0",
+  id: "test-ocean-product-v1",
+  title: "Test Ocean Salinity Product v1.0",
+  description: "High-resolution ocean salinity dataset version 1.0.",
+  license: "CC-BY-4.0",
+  version: "1.0",
+  "osc:type": "product",
+  "osc:project": "ocean-health",
+  "sci:doi": "10.83395/test-v1-doi",
+  links: [
+    {
+      rel: "root",
+      href: `${CATALOG_BASE}/catalog.json`,
+      type: "application/json",
+    },
+    {
+      rel: "self",
+      href: `${CATALOG_BASE}/products/test-ocean-product/collection_v1.json`,
+      type: "application/json",
+    },
+    {
+      rel: "is-version-of",
+      href: `${CATALOG_BASE}/products/test-ocean-product/collection.json`,
+      type: "application/json",
+      title: "Canonical version",
+    },
+    {
+      rel: "version-history",
+      href: "https://api.test.datacite.org/dois/application/vnd.datacite.datacite+json/10.83395/test-canonical-doi",
+      type: "application/vnd.datacite.datacite+json",
+      title: "Version History (DataCite JSON)",
     },
   ],
 };
@@ -198,6 +241,17 @@ test.describe("Open Science Catalogue Frontend", () => {
           status: 200,
           contentType: "application/json",
           body: JSON.stringify(mockProductCollection),
+        });
+      }
+    );
+
+    await page.route(
+      `${CATALOG_BASE}/products/test-ocean-product/collection_v1.json`,
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(mockVersionedProductCollection),
         });
       }
     );
@@ -233,7 +287,7 @@ test.describe("Open Science Catalogue Frontend", () => {
 
     const iframe = page.frameLocator("#indexIframe");
     await expect(
-      iframe.getByRole("heading", { name: "Welcome to the Open Science Catalogue" })
+      iframe.getByRole("heading", { name: /(Welcome to the|EarthCODE) Open Science Catalogue/ })
     ).toBeVisible();
     await expect(
       iframe.getByText("A catalogue of geoscience products, datasets, software, workflows")
@@ -263,7 +317,7 @@ test.describe("Open Science Catalogue Frontend", () => {
     const bgImage = await iframe.locator(".hero-section").evaluate((el) => {
       return window.getComputedStyle(el).backgroundImage;
     });
-    expect(bgImage).toContain("earthcode-infographic-pillars-Nologo.jpg");
+    expect(bgImage).toMatch(/(earthcode-infographic-pillars-Nologo|EarthCODE_EO_science_cataloque-V3)\.jpg/);
   });
 
   test("renders the About page at /about (and backwards-compatible /fair) and Privacy Notice at /privacy-notice", async ({
@@ -360,6 +414,74 @@ test.describe("Open Science Catalogue Frontend", () => {
     expect(introBox).not.toBeNull();
     expect(dataAccessBox).not.toBeNull();
     expect(dataAccessBox.x).toBeGreaterThan(introBox.x + 200);
+
+    // 7. Verify version history JSON link is suppressed from "Additional Resources" in STAC Browser
+    await expect(browserEl.locator(".additional-resources")).toHaveCount(0);
+    await expect(
+      browserEl.locator(".metadata").getByText("Version History (DataCite JSON)")
+    ).toHaveCount(0);
+
+    // 8. Open DOI & Version History popover: verify available versions and DataCite JSON link
+    const doiInfoBtn = header.locator(".info-btn");
+    await expect(doiInfoBtn).toBeVisible();
+    await doiInfoBtn.click();
+
+    const doiPopover = header.locator(".doi-popover-content");
+    await expect(doiPopover).toBeVisible();
+    await expect(doiPopover.getByText("Canonical DOI", { exact: true })).toBeVisible();
+    await expect(doiPopover.getByText("Available versions:")).toBeVisible();
+    await expect(doiPopover.getByRole("link", { name: "Version 1.0" })).toBeVisible();
+    await expect(doiPopover.getByText("Version history:")).toBeVisible();
+
+    const versionHistoryLink = doiPopover.getByRole("link", {
+      name: /Version History \(DataCite JSON\)/i,
+    });
+    await expect(versionHistoryLink).toBeVisible();
+    await expect(versionHistoryLink).toHaveAttribute(
+      "href",
+      "https://api.test.datacite.org/dois/application/vnd.datacite.datacite+json/10.83395/test-canonical-doi"
+    );
+    await expect(versionHistoryLink).toHaveAttribute("target", "_blank");
+  });
+
+  test("renders version DOI popover with link to Canonical collection and DataCite JSON version history", async ({
+    page,
+  }) => {
+    await page.goto("/products/test-ocean-product/collection_v1");
+    const browserEl = page.locator("stac-browser");
+    await expect(browserEl).toHaveClass(/is-osc-product/, { timeout: 15000 });
+
+    const header = page.locator("osc-product-header .osc-product-header");
+    await expect(header).toBeVisible();
+    await expect(header.locator(".doi-type-badge").getByText("DOI (v1.0)")).toBeVisible();
+    await expect(header.getByText("10.83395/test-v1-doi")).toBeVisible();
+
+    // Verify version history JSON link is suppressed from "Additional Resources"
+    await expect(browserEl.locator(".additional-resources")).toHaveCount(0);
+    await expect(
+      browserEl.locator(".metadata").getByText("Version History (DataCite JSON)")
+    ).toHaveCount(0);
+
+    // Click popover info button
+    const doiInfoBtn = header.locator(".info-btn");
+    await expect(doiInfoBtn).toBeVisible();
+    await doiInfoBtn.click();
+
+    const doiPopover = header.locator(".doi-popover-content");
+    await expect(doiPopover).toBeVisible();
+    await expect(doiPopover.getByText("DOI (v1.0)")).toBeVisible();
+    await expect(doiPopover.getByText("Go to Canonical version →")).toBeVisible();
+    await expect(doiPopover.getByText("Version history:")).toBeVisible();
+
+    const versionHistoryLink = doiPopover.getByRole("link", {
+      name: /Version History \(DataCite JSON\)/i,
+    });
+    await expect(versionHistoryLink).toBeVisible();
+    await expect(versionHistoryLink).toHaveAttribute(
+      "href",
+      "https://api.test.datacite.org/dois/application/vnd.datacite.datacite+json/10.83395/test-canonical-doi"
+    );
+    await expect(versionHistoryLink).toHaveAttribute("target", "_blank");
   });
 
   test("supports embed=true on /catalog to hide ESA chrome and reset header margin", async ({

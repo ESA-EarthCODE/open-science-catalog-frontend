@@ -995,7 +995,7 @@ stac-browser.is-osc-product::part(items) {
 
 .osc-product-header .doi-popover-content {
   min-width: 250px;
-  max-width: 290px;
+  max-width: 320px;
   font-size: 0.82rem;
   line-height: 1.4;
 }

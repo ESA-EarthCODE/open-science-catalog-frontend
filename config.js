@@ -210,6 +210,19 @@ export default {
           continue;
         }
 
+        // Suppress version history JSON links from "Additional Resources"
+        // (handled by <osc-product-header> DOI & version history popover)
+        if (
+          link.rel === "version-history" ||
+          (typeof link.type === "string" &&
+            link.type.toLowerCase().includes("datacite+json")) ||
+          (link.rel !== "child" &&
+            typeof link.title === "string" &&
+            link.title.toLowerCase().includes("version history"))
+        ) {
+          continue;
+        }
+
         // Allow internal STAC Browser navigation for version links (replaces src/rels.js patch)
         if (link.rel === "has-version" || link.rel === "is-version-of") {
           link.rel = "related";

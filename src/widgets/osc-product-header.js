@@ -152,6 +152,91 @@ export class OscProductHeader extends HTMLElement {
     return this._links().find((l) => l && l.rel === "is-version-of") || null;
   }
 
+  _versionHistoryLinks() {
+    return this._links().filter(
+      (l) =>
+        l &&
+        (l.rel === "version-history" ||
+          (typeof l.type === "string" &&
+            l.type.toLowerCase().includes("datacite+json")) ||
+          (l.rel !== "child" &&
+            typeof l.title === "string" &&
+            l.title.toLowerCase().includes("version history")))
+    );
+  }
+
+  _versionHistoryLink() {
+    return this._versionHistoryLinks()[0] || null;
+  }
+
+  _getVersionHistoryTitle(link) {
+    if (!link) return "Version History (DataCite JSON)";
+    if (typeof link.title === "string" && link.title.trim().length > 0) {
+      return link.title.trim();
+    }
+    return "Version History (DataCite JSON)";
+  }
+
+  _resolveLinkHref(href) {
+    if (!href) return "";
+    try {
+      const base =
+        this._stacUrl ||
+        CONFIG.catalogUrl ||
+        (typeof window !== "undefined" && window.location
+          ? window.location.href
+          : "https://opensciencedata.esa.int");
+      return new URL(href, base).href;
+    } catch {
+      return href;
+    }
+  }
+
+  _renderVersionHistoryLinksHtml(versionHistoryLinks) {
+    if (!versionHistoryLinks || versionHistoryLinks.length === 0) return "";
+    return `
+      <div class="version-history-links border-top pt-2 mt-2">
+        <div class="fw-semibold small mb-1">Version history:</div>
+        <ul class="list-unstyled mb-0 d-flex flex-column gap-1">
+          ${versionHistoryLinks
+            .map((vhLink) => {
+              const href = this._resolveLinkHref(vhLink.href);
+              const title = this._getVersionHistoryTitle(vhLink);
+              const vDate =
+                vhLink.created ||
+                vhLink.updated ||
+                vhLink.published ||
+                vhLink.date ||
+                null;
+              const dateStr = vDate ? String(vDate).slice(0, 10) : "";
+              return `
+            <li class="d-flex align-items-center">
+              <a
+                href="${escapeHtml(href)}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="stac-link small fw-semibold text-decoration-none d-inline-flex align-items-center"
+                title="Open ${escapeHtml(title)}"
+              >
+                <span>${escapeHtml(title)}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ms-1 external-icon"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+              </a>
+              ${
+                dateStr
+                  ? `<span class="text-muted ms-2 small">(${escapeHtml(
+                      dateStr
+                    )})</span>`
+                  : ""
+              }
+            </li>
+          `;
+            })
+            .join("")}
+        </ul>
+      </div>
+    `;
+  }
+
   _getVersionTitle(link) {
     if (!link) return "Show";
     const rawTitle = link.title ? String(link.title).trim() : "";
@@ -381,6 +466,7 @@ export class OscProductHeader extends HTMLElement {
     const versionLinks = this._versionLinks();
     const latestLink = this._latestLink();
     const canonicalLink = this._canonicalLink();
+    const versionHistoryLinks = this._versionHistoryLinks();
     const rawDate =
       this._stac.created ||
       this._stac.published ||
@@ -442,6 +528,7 @@ export class OscProductHeader extends HTMLElement {
         `
             : ""
         }
+        ${this._renderVersionHistoryLinksHtml(versionHistoryLinks)}
       `
       : `
         <div class="fw-bold mb-1 text-primary">${escapeHtml(doiLabel)}</div>
@@ -472,6 +559,7 @@ export class OscProductHeader extends HTMLElement {
         `
             : ""
         }
+        ${this._renderVersionHistoryLinksHtml(versionHistoryLinks)}
       `;
 
     this.innerHTML = `
@@ -679,7 +767,7 @@ export class OscProductHeader extends HTMLElement {
                     <button
                       type="button"
                       class="btn btn-sm info-btn"
-                      title="${isCanonical ? "About Canonical DOI" : "About Version DOI"}"
+                      title="${isCanonical ? "About Canonical DOI & Version History" : "About Version DOI & History"}"
                       data-popover-toggle
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
