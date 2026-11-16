@@ -98,7 +98,7 @@ npm test
 
 Build the production Docker image:
 ```bash
-docker build -t open-science-catalogue-frontend .
+docker build -t open-science-catalog-frontend .
 ```
 
 Run the container (supports `SB_*` runtime environment variables):
@@ -106,7 +106,7 @@ Run the container (supports `SB_*` runtime environment variables):
 docker run -p 8080:8080 \
   -e SB_catalogUrl="https://esa-earthcode.github.io/open-science-catalog-metadata/catalog.json" \
   -e SB_apiUrl="https://eoapi.workspace.earthcode.eox.at/stac" \
-  open-science-catalogue-frontend
+  open-science-catalog-frontend
 ```
 
 ---
