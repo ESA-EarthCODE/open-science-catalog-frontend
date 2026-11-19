@@ -17,7 +17,7 @@ RUN [ "${DYNAMIC_CONFIG}" == "true" ] && sed -i 's/<!--RC//;s/RC-->//' index.htm
 RUN npm run build
 
 
-FROM nginxinc/nginx-unprivileged:1-alpine
+FROM nginx/nginx-unprivileged:1.31.9-alpine
 ARG pathPrefix="/"
 
 USER root
